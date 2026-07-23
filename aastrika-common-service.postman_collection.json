@@ -1,0 +1,801 @@
+{
+  "info": {
+    "_postman_id": "aastrika-passbook-collection-0001",
+    "name": "Aastrika Common Service",
+    "description": "All API endpoints for aastrika-common-service, grouped by controller: Certificate, Passbook, Leaderboard, Ratings.\n\nUsage:\n1. Import into Postman. The collection id is kept stable, so re-importing this file updates your existing collection in place (choose Replace if prompted) rather than creating a new one.\n2. Set the collection variable `baseUrl` (default http://localhost:7011).\n3. Requests carry test assertions on the expected HTTP status. In the Passbook folder, run 'Add entries' before the 'Duplicate add' error case.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:7011", "type": "string" },
+    { "key": "actingUser", "value": "admin-hdr-user", "type": "string" },
+    { "key": "targetUser", "value": "demo-user-01", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Certificate",
+      "item": [
+        {
+          "name": "C1. Certificate status (POST /v1/certificate/status)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responds with a known status\", () => pm.expect([200,400,404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rootOrgId\": \"rootOrg-1\",\n  \"programId\": \"program-1\",\n  \"userId\": \"user-1\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/certificate/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "certificate", "status"]
+            },
+            "description": "Completion + certificate-generated status for (rootOrgId, programId, userId). 404 RESOURCE_NOT_FOUND if no completion row exists (Postgres user_program_completion)."
+          }
+        },
+        {
+          "name": "C2. Certificate download (POST /v1/certificate/download)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responds with a known status\", () => pm.expect([200,400,404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rootOrgId\": \"rootOrg-1\",\n  \"programId\": \"program-1\",\n  \"userId\": \"user-1\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/certificate/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "certificate", "download"]
+            },
+            "description": "Resolves the downloadable certificate URL. 404 RESOURCE_NOT_FOUND / 400 PROGRAM_NOT_COMPLETED / 404 CERTIFICATE_NOT_GENERATED depending on state."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Passbook",
+      "item": [
+        {
+          "name": "1. Add entries (PATCH /user/v1/passbook)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"responseCode is OK\", () => pm.expect(pm.response.json().responseCode).to.eql(\"OK\"));",
+                  "pm.test(\"insertedCount >= 1\", () => pm.expect(pm.response.json().result.insertedCount).to.be.above(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "x-authenticated-userid", "value": "{{actingUser}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{targetUser}}\",\n  \"typeName\": \"competency\",\n  \"competencyDetails\": [\n    {\n      \"competencyId\": \"comp-100\",\n      \"acquiredDetails\": {\n        \"acquiredChannel\": \"self\",\n        \"competencyLevelId\": \"level-2\",\n        \"effectiveDate\": \"2024-01-15T10:00:00Z\",\n        \"additionalParams\": { \"courseId\": \"course-abc\", \"score\": 88 }\n      },\n      \"additionalParams\": { \"source\": \"postman-test\" }\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/passbook",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "passbook"]
+            },
+            "description": "Adds passbook entries for `userId` (from the body). The header user is stored as `createdBy`."
+          }
+        },
+        {
+          "name": "2. Read own passbook (POST /user/v1/passbook)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"responseCode is OK\", () => pm.expect(pm.response.json().responseCode).to.eql(\"OK\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-authenticated-userid", "value": "{{targetUser}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeName\": \"competency\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/passbook",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "passbook"]
+            },
+            "description": "Reads the authenticated user's own passbook. The user comes from the `x-authenticated-userid` header."
+          }
+        },
+        {
+          "name": "3. Admin read (POST /admin/user/v1/passbook)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"responseCode is OK\", () => pm.expect(pm.response.json().responseCode).to.eql(\"OK\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeName\": \"competency\",\n  \"userIds\": [\"{{targetUser}}\", \"mig-test-user-001\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/user/v1/passbook",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "user", "v1", "passbook"]
+            },
+            "description": "Reads passbooks for a list of users. No auth header required; users come from the body."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Passbook - Errors (expect 400)",
+      "item": [
+        {
+          "name": "4. Duplicate add -> Passbook entry already exist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"errmsg mentions already exist\", () => pm.expect(pm.response.json().params.errmsg).to.include(\"already exist\"));",
+                  "// NOTE: run 'Add entries' first so this row already exists."
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "x-authenticated-userid", "value": "{{actingUser}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{targetUser}}\",\n  \"typeName\": \"competency\",\n  \"competencyDetails\": [\n    {\n      \"competencyId\": \"comp-100\",\n      \"acquiredDetails\": {\n        \"acquiredChannel\": \"self\",\n        \"competencyLevelId\": \"level-2\",\n        \"additionalParams\": { \"courseId\": \"course-abc\" }\n      }\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/passbook",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "passbook"]
+            },
+            "description": "Re-adds the same competency + level + courseId as request #1, which the duplicate check rejects."
+          }
+        },
+        {
+          "name": "5. Same competency twice -> provided twice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"errmsg mentions provided twice\", () => pm.expect(pm.response.json().params.errmsg).to.include(\"provided twice\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "x-authenticated-userid", "value": "{{actingUser}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"dup-req-user\",\n  \"typeName\": \"competency\",\n  \"competencyDetails\": [\n    { \"competencyId\": \"c1\", \"acquiredDetails\": { \"acquiredChannel\": \"self\", \"competencyLevelId\": \"l1\" } },\n    { \"competencyId\": \"c1\", \"acquiredDetails\": { \"acquiredChannel\": \"self\", \"competencyLevelId\": \"l2\" } }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/passbook",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "passbook"]
+            },
+            "description": "The same competencyId appears twice in one request, which is rejected."
+          }
+        },
+        {
+          "name": "6. Unsupported typeName -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"errmsg mentions Invalid typeName\", () => pm.expect(pm.response.json().params.errmsg).to.include(\"Invalid typeName\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-authenticated-userid", "value": "{{targetUser}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeName\": \"badge\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/passbook",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "passbook"]
+            },
+            "description": "typeName not in the configured supported list (passbook.supported-type-names)."
+          }
+        },
+        {
+          "name": "7. Blank typeName -> 400 (bean validation)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"errmsg mentions must not be blank\", () => pm.expect(pm.response.json().params.errmsg).to.include(\"must not be blank\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-authenticated-userid", "value": "{{targetUser}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeName\": \"\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/passbook",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "passbook"]
+            },
+            "description": "Empty typeName fails the @NotBlank validation before reaching the service."
+          }
+        },
+        {
+          "name": "8. Missing auth header -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"errmsg mentions request header\", () => pm.expect(pm.response.json().params.errmsg).to.include(\"request header\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeName\": \"competency\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/passbook",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "passbook"]
+            },
+            "description": "No x-authenticated-userid header -> handled as 400 (MissingRequestHeaderException handler)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leaderboard",
+      "description": "POST /user/v1/leaderboard (Postgres-backed). Requires public.leaderboard_table to exist and be seeded. The verified sample data uses userids u1-u5 with state=Kerala/Tamil Nadu.",
+      "item": [
+        {
+          "name": "L1. Leaderboard - happy path (POST /user/v1/leaderboard)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"responseCode is OK\", () => pm.expect(pm.response.json().responseCode).to.eql(\"OK\"));",
+                  "pm.test(\"has count + content\", () => { const r = pm.response.json().result; pm.expect(r).to.have.property(\"count\"); pm.expect(r.content).to.have.property(\"leaderboardList\"); pm.expect(r.content).to.have.property(\"activeUserDetails\"); });",
+                  "pm.test(\"active user has a rank\", () => pm.expect(pm.response.json().result.content.activeUserDetails.rank).to.be.a(\"number\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filters\": { \"state\": \"Kerala\" },\n  \"userId\": \"u2\",\n  \"limit\": 10,\n  \"offset\": 0\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/leaderboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "leaderboard"]
+            },
+            "description": "Ranked page for the filter, plus the active user's own rank. Filter keys must be leaderboard_table columns (state, profession, district, rootorgid, points, ...)."
+          }
+        },
+        {
+          "name": "L2. Leaderboard - paging (limit=2, offset=1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"page size <= limit\", () => pm.expect(pm.response.json().result.content.leaderboardList.length).to.be.at.most(2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filters\": { \"state\": \"Kerala\" },\n  \"userId\": \"u2\",\n  \"limit\": 2,\n  \"offset\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/leaderboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "leaderboard"]
+            },
+            "description": "Ranks continue from offset+1; count remains the total for the filter."
+          }
+        },
+        {
+          "name": "L3. Invalid filter field (SQL-injection guard) -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"errmsg mentions Invalid filter field\", () => pm.expect(pm.response.json().params.errmsg).to.include(\"Invalid filter field\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filters\": { \"userid; DROP TABLE x\": \"y\" },\n  \"userId\": \"u2\",\n  \"limit\": 10,\n  \"offset\": 0\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/leaderboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "leaderboard"]
+            },
+            "description": "A non-column filter key is rejected by the whitelist before it can reach SQL."
+          }
+        },
+        {
+          "name": "L4. Active user outside filtered set -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"errmsg mentions data is missing\", () => pm.expect(pm.response.json().params.errmsg).to.include(\"data is missing\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filters\": { \"state\": \"Kerala\" },\n  \"userId\": \"u5\",\n  \"limit\": 10,\n  \"offset\": 0\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/leaderboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "leaderboard"]
+            },
+            "description": "u5 is in Tamil Nadu, so it does not match the Kerala filter -> active user not found."
+          }
+        },
+        {
+          "name": "L5. limit > 1000 -> 400 (validation)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filters\": { \"state\": \"Kerala\" },\n  \"userId\": \"u2\",\n  \"limit\": 5000,\n  \"offset\": 0\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/leaderboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "leaderboard"]
+            },
+            "description": "limit is capped at 1000 by bean validation."
+          }
+        },
+        {
+          "name": "L6. Empty filters -> 400 (validation)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filters\": {},\n  \"userId\": \"u2\",\n  \"limit\": 10,\n  \"offset\": 0\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/leaderboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "v1", "leaderboard"]
+            },
+            "description": "filters must be non-empty."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ratings",
+      "description": "Migrated RatingsController endpoints (5 of 7). #6 (meta/update) and #7 (additionaltag) are deferred - they need an external learning service (8080) + content service API + Redis-populating ETL.\n\nNotes:\n- R1 (upsert) writes to Cassandra AND emits a Kafka event to dev.rating.event.\n- R4 (summary) / R5 (lookup) use a real activity id that has aggregated data (do_1139209447509688321472).",
+      "item": [
+        {
+          "name": "R1. Upsert rating (POST /ratings/v1/upsert)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"responseCode is OK\", () => pm.expect(pm.response.json().responseCode).to.eql(\"OK\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": \"course-900\",\n  \"activityType\": \"Course\",\n  \"userId\": \"user-500\",\n  \"rating\": 5,\n  \"review\": \"Excellent content\",\n  \"recommended\": \"yes\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ratings/v1/upsert",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "v1", "upsert"]
+            },
+            "description": "Create/update a rating. Emits a Kafka event unless it's a comment-only update."
+          }
+        },
+        {
+          "name": "R2. Read a user's rating (GET /ratings/v1/read/...)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"has response object\", () => pm.expect(pm.response.json().result).to.have.property(\"response\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/v1/read/course-900/Course/user-500",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "v1", "read", "course-900", "Course", "user-500"]
+            },
+            "description": "Read a single user's rating for an activity (run R1 first to have data)."
+          }
+        },
+        {
+          "name": "R3. Batch read (POST /ratings/v2/read)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"has count\", () => pm.expect(pm.response.json().result).to.have.property(\"count\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": \"course-900\",\n  \"activityType\": \"Course\",\n  \"userIds\": [\"user-500\", \"ghost-user\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ratings/v2/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "v2", "read"]
+            },
+            "description": "Ratings for one activity across a list of users."
+          }
+        },
+        {
+          "name": "R4. Rating summary (GET /ratings/v1/summary/...)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/v1/summary/do_1139209447509688321472/Course",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "v1", "summary", "do_1139209447509688321472", "Course"]
+            },
+            "description": "Star counts + latest reviews (enriched with reviewer first name)."
+          }
+        },
+        {
+          "name": "R5. Rating lookup / paginated reviews (POST /ratings/v1/ratingLookUp)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "// To paginate: take the last item's updatedOnUuid and send it as 'updateOn' next call."
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": \"do_1139209447509688321472\",\n  \"activityType\": \"Course\",\n  \"limit\": 5\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ratings/v1/ratingLookUp",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "v1", "ratingLookUp"]
+            },
+            "description": "Paginated reviews. Optional 'rating' filters by star; 'updateOn' is the cursor (updatedOnUuid of the last row)."
+          }
+        },
+        {
+          "name": "R6. Upsert invalid rating (6) -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": \"course-900\",\n  \"activityType\": \"Course\",\n  \"userId\": \"user-500\",\n  \"rating\": 6\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ratings/v1/upsert",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "v1", "upsert"]
+            },
+            "description": "rating must be between 1 and 5."
+          }
+        },
+        {
+          "name": "R7. Meta update (POST /ratings/meta/update)  [#6]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"has update counts\", () => pm.expect(pm.response.json().result).to.have.property(\"totalNumberOfUpdatedContent\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/meta/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["ratings", "meta", "update"]
+            },
+            "description": "Ops job: pushes each activity's aggregate rating stats (avg + star counts) from ratings_summary into content metadata. Requires the content service (read) + learning service (system-update PATCH). Capped by ratings.meta-update-limit."
+          }
+        },
+        {
+          "name": "R8. Additional tag - mostEnrolled (POST /update/v1/content/additionaltag)  [#7]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"has update counts\", () => pm.expect(pm.response.json().result).to.have.property(\"totalNumberOfUpdatedContent\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/update/v1/content/additionaltag?tag=mostEnrolled",
+              "host": ["{{baseUrl}}"],
+              "path": ["update", "v1", "content", "additionaltag"],
+              "query": [ { "key": "tag", "value": "mostEnrolled" } ]
+            },
+            "description": "Adds/removes the tag on content, driven by the Redis (DB 12) list lhp_mostEnrolledTag. Valid tags: mostEnrolled, mostTrending. Requires Redis + content service + learning service."
+          }
+        },
+        {
+          "name": "R9. Additional tag - invalid tag -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"errmsg mentions valid Tag\", () => pm.expect(pm.response.json().params.errmsg).to.include(\"valid Tag\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/update/v1/content/additionaltag?tag=bogusTag",
+              "host": ["{{baseUrl}}"],
+              "path": ["update", "v1", "content", "additionaltag"],
+              "query": [ { "key": "tag", "value": "bogusTag" } ]
+            },
+            "description": "Unsupported tag -> 400 'Please provide a valid Tag'."
+          }
+        }
+      ]
+    }
+  ]
+}

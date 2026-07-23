@@ -7,6 +7,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
@@ -46,6 +47,12 @@ public class ApplicationExceptionHandler {
 
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .body(AppResponse.error(null, errorMessages, HttpStatus.BAD_REQUEST));
+  }
+
+  @ExceptionHandler(MissingRequestHeaderException.class)
+  public ResponseEntity<AppResponse> handleMissingHeader(MissingRequestHeaderException exception) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(AppResponse.error(null, exception.getMessage(), HttpStatus.BAD_REQUEST));
   }
 
   @ExceptionHandler(DataIntegrityViolationException.class)

@@ -5,7 +5,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.aastrika.core.logger.CbExtLogger;
 import org.aastrika.dao.CassandraDao;
 import org.springframework.stereotype.Repository;
 
@@ -15,15 +14,17 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * {@link CassandraDao} backed by the Spring Boot auto-configured {@link CqlSession}
  * (from {@code spring.cassandra.*}). Values are always passed as bound parameters ({@code ?});
  * keyspace/table/column names are code-supplied identifiers, never end-user input.
  */
 @Repository
+@Slf4j
 public class CassandraDaoImpl implements CassandraDao {
 
-    private final CbExtLogger logger = new CbExtLogger(getClass().getName());
     private final CqlSession session;
 
     public CassandraDaoImpl(CqlSession session) {
@@ -96,7 +97,7 @@ public class CassandraDaoImpl implements CassandraDao {
         try {
             return session.execute("SELECT release_version FROM system.local").one() != null;
         } catch (Exception e) {
-            logger.error(e);
+            log.error("Cassandra reachability check failed", e);
             return false;
         }
     }

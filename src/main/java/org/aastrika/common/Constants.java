@@ -24,4 +24,10 @@ public class Constants {
     public static final String REQUEST = "request";
     public static final String IS_CBP = "isCbp";
 
+    public static final String FAILED = "";
+    public static final String CONTENT = "";
+    public static final String COUNT = "";
+    public static final String SUCCESS = "";
+    public static final String RESPONSE = "";
+    public static final String STATUS = "";
 }

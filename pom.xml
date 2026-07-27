@@ -37,12 +37,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-        <!-- OpenSearch replaces Elasticsearch -->
-        <dependency>
-            <groupId>org.opensearch.client</groupId>
-            <artifactId>spring-data-opensearch-starter</artifactId>
-            <version>1.6.0</version>
-        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -71,6 +65,21 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+        <groupId>redis.clients</groupId>
+        <artifactId>jedis</artifactId>
+    </dependency>
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>6.8.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <version>6.8.0</version>
+        </dependency>
+
         <!-- Cassandra: Spring Data starter - auto-configures a CqlSession (and CassandraTemplate)
              from spring.cassandra.* properties. Version managed by the Spring Boot parent BOM.
              NOTE: the CqlSession connects at startup, so Cassandra must be reachable to boot. -->

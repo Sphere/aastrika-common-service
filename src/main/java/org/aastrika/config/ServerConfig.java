@@ -1,5 +1,6 @@
 package org.aastrika.config;
 
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -8,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@Getter
 @Component
 public class ServerConfig {
 
@@ -55,46 +57,9 @@ public class ServerConfig {
     @Value("${sb.es.user.profile.index}")
     private String sbEsUserProfileIndex;
 
-    public String getLmsUserReadPath() {
-        return lmsUserReadPath;
-    }
-
-    public String getSbUrl() {
-        return sbUrl;
-    }
-
-
     public String[] getEsHostList() {
         return esHostList.split(",", -1);
     }
-
-    public String getEsUser() {
-        return esUser;
-    }
-
-    public String getEsPassword() {
-        return esPassword;
-    }
-
-    public String getEsProfileIndexType() {
-        return esProfileIndexType;
-    }
-
-
-    public String getSbAssignRolePath() {
-        return sbAssignRolePath;
-    }
-
-    public String getLmsUserMigratePath() {
-        return lmsUserMigratePath;
-    }
-
-
-    public String getLmsDataSyncPath() {
-        return lmsDataSyncPath;
-    }
-
-
     public List<String> getEsAutoCompleteSearchFields() {
         return Arrays.asList(esAutoCompleteSearchFields.split(",", -1));
     }
@@ -106,19 +71,5 @@ public class ServerConfig {
     public String[] getSbEsHostList() {
         return sbEsHostList.split(",", -1);
     }
-
-    public String getSbEsUser() {
-        return sbEsUser;
-    }
-
-    public String getSbEsPassword() {
-        return sbEsPassword;
-    }
-
-
-    public String getSbEsUserProfileIndex() {
-        return sbEsUserProfileIndex;
-    }
-
 
 }

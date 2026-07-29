@@ -24,7 +24,6 @@ public class ProfileController {
     @Autowired
     private ProfileService profileService;
 
-
     @GetMapping("/user/v1/autocomplete/{searchTerm}")
     public ResponseEntity<?> userAutoComplete(@PathVariable("searchTerm") String searchTerm) {
         SBApiResponse response = profileService.userAutoComplete(searchTerm);

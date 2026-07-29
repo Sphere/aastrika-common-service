@@ -5,22 +5,22 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.*;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.core.CountResponse;
-import org.elasticsearch.rest.RestStatus;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.opensearch.action.bulk.BulkRequest;
+import org.opensearch.action.bulk.BulkResponse;
+import org.opensearch.action.get.GetRequest;
+import org.opensearch.action.get.GetResponse;
+import org.opensearch.action.index.IndexRequest;
+import org.opensearch.action.index.IndexResponse;
+import org.opensearch.action.search.SearchRequest;
+import org.opensearch.action.search.SearchResponse;
+import org.opensearch.action.update.UpdateRequest;
+import org.opensearch.action.update.UpdateResponse;
+import org.opensearch.client.*;
+import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.client.core.CountRequest;
+import org.opensearch.client.core.CountResponse;
+import org.opensearch.core.rest.RestStatus;
+import org.opensearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,11 +35,11 @@ public class IndexerService {
     private Logger logger = LoggerFactory.getLogger(IndexerService.class);
 
     @Autowired
-    @Qualifier("esClient")
+    @Qualifier("osClient")
     private RestHighLevelClient esClient;
 
     @Autowired
-    @Qualifier("sbEsClient")
+    @Qualifier("sbOsClient")
     private RestHighLevelClient sbEsClient;
 
     /**
@@ -54,14 +54,14 @@ public class IndexerService {
         IndexResponse response = null;
         try {
             if (!StringUtils.isEmpty(entityId)) {
-                response = esClient.index(new IndexRequest(index, indexType, entityId).source(indexDocument),
+                response = esClient.index(new IndexRequest(index).id(entityId).source(indexDocument),
                         RequestOptions.DEFAULT);
             } else {
-                response = esClient.index(new IndexRequest(index, indexType).source(indexDocument),
+                response = esClient.index(new IndexRequest(index).source(indexDocument),
                         RequestOptions.DEFAULT);
             }
         } catch (IOException e) {
-            logger.error("Exception in adding record to ElasticSearch", e);
+            logger.error("Exception in adding record to OpenSearch", e);
         }
         if (null == response)
             return null;
@@ -79,10 +79,10 @@ public class IndexerService {
         logger.info("updateEntity starts with index {} and entityId {}", index, entityId);
         UpdateResponse response = null;
         try {
-            response = esClient.update(new UpdateRequest(index.toLowerCase(), indexType, entityId).doc(indexDocument),
+            response = esClient.update(new UpdateRequest(index.toLowerCase(), entityId).doc(indexDocument),
                     RequestOptions.DEFAULT);
         } catch (IOException e) {
-            logger.error("Exception in updating a record to ElasticSearch", e);
+            logger.error("Exception in updating a record to OpenSearch", e);
         }
         if (null == response)
             return null;
@@ -99,9 +99,9 @@ public class IndexerService {
         logger.info("readEntity starts with index {} and entityId {}", index, entityId);
         GetResponse response = null;
         try {
-            response = esClient.get(new GetRequest(index, indexType, entityId), RequestOptions.DEFAULT);
+            response = esClient.get(new GetRequest(index, entityId), RequestOptions.DEFAULT);
         } catch (IOException e) {
-            logger.error("Exception in getting the record from ElasticSearch", e);
+            logger.error("Exception in getting the record from OpenSearch", e);
         }
         if (null == response)
             return null;
@@ -109,23 +109,19 @@ public class IndexerService {
     }
 
     /**
-     * Search the document in es based on provided information
+     * Search the document in OpenSearch based on provided information
      *
-     * @param indexName           es index name
-     * @param type                index type
+     * @param indexName           index name
+     * @param type                index type (unused - types are removed in OpenSearch)
      * @param searchSourceBuilder source builder
-     * @return es search response
+     * @return search response
      * @throws IOException
      */
     public SearchResponse getEsResult(String indexName, String type, SearchSourceBuilder searchSourceBuilder,
                                       boolean isSunbirdES) throws IOException {
         SearchRequest searchRequest = new SearchRequest();
-        System.out.println("came inside search result");
         searchRequest.indices(indexName);
-        if (!StringUtils.isEmpty(type))
-            searchRequest.types(type);
         searchRequest.source(searchSourceBuilder);
-        System.out.println("getEsresult" + getEsResult(searchRequest, isSunbirdES));
         return getEsResult(searchRequest, isSunbirdES);
     }
 
@@ -137,7 +133,7 @@ public class IndexerService {
             try {
                 restStatus = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
             } catch (IOException e) {
-                logger.error("Exception while doing the bulk operation in ElasticSearch", e);
+                logger.error("Exception while doing the bulk operation in OpenSearch", e);
             }
         }
         if (null == restStatus)
@@ -167,7 +163,7 @@ public class IndexerService {
             }
 
         } catch (Exception e) {
-
+            logger.error(String.format("Exception in getDocumentCount: %s", e.getMessage()));
         }
         return 0l;
     }
@@ -180,5 +176,3 @@ public class IndexerService {
         }
     }
 }
-
-

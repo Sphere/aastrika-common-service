@@ -5,9 +5,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.http.HttpStatus;
 
 @Getter
+@Setter
 public class SBApiResponse {
 
     private String id;
@@ -28,5 +30,18 @@ public class SBApiResponse {
         this();
         this.id = id;
     }
+
+    public void put(String key, Object vo) {
+        response.put(key, vo);
+    }
+
+    public void putAll(Map<String, Object> map) {
+        response.putAll(map);
+    }
+
+    public Map<String, Object> getResult() {
+        return response;
+    }
+
 }
 

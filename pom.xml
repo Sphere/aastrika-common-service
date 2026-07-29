@@ -77,6 +77,22 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>6.8.0</version>
+        </dependency>
+        <dependency>
+            <groupId> org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <version>6.8.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.elasticsearch</groupId>
+                    <artifactId>elasticsearch</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- Cassandra: Spring Data starter - auto-configures a CqlSession (and CassandraTemplate)
              from spring.cassandra.* properties. Version managed by the Spring Boot parent BOM.
              NOTE: the CqlSession connects at startup, so Cassandra must be reachable to boot. -->

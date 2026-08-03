@@ -65,4 +65,28 @@ public class RatingLookupRepositoryImpl implements RatingLookupRepository {
         }
         return rows;
     }
+
+    @Override
+    public boolean existsForStar(String activityId, String activityType, float rating) {
+        ResultSet rs = session.execute(SimpleStatement.newInstance(
+                "SELECT userid FROM ratings_lookup WHERE activityid = ? AND activitytype = ? AND rating = ? LIMIT 1",
+                activityId, activityType, rating));
+        return rs.one() != null;
+    }
+
+    @Override
+    public void delete(String activityId, String activityType, float rating, UUID updatedOn) {
+        session.execute(SimpleStatement.newInstance(
+                "DELETE FROM ratings_lookup WHERE activityid = ? AND activitytype = ? AND rating = ? AND updatedon = ?",
+                activityId, activityType, rating, updatedOn));
+    }
+
+    @Override
+    public void insert(String activityId, String activityType, float rating, UUID updatedOn, String review,
+                       String userId) {
+        session.execute(SimpleStatement.newInstance(
+                "INSERT INTO ratings_lookup (activityid, activitytype, rating, updatedon, review, userid)"
+                        + " VALUES (?, ?, ?, ?, ?, ?)",
+                activityId, activityType, rating, updatedOn, review, userId));
+    }
 }

@@ -39,15 +39,6 @@ public class RatingsController {
         return ResponseEntity.ok(ratingService.readRatings(request));
     }
 
-    /** Read a single user's rating for an activity. */
-    @GetMapping("/ratings/v1/read/{activityId}/{activityType}/{userId}")
-    public ResponseEntity<AppResponse<Map<String, Object>>> getRating(
-            @PathVariable("activityId") String activityId,
-            @PathVariable("activityType") String activityType,
-            @PathVariable("userId") String userId) {
-        return ResponseEntity.ok(ratingService.getRating(activityId, activityType, userId));
-    }
-
     /** Aggregate rating summary (star counts + latest reviews) for an activity. */
     @GetMapping("/ratings/v1/summary/{activityId}/{activityType}")
     public ResponseEntity<AppResponse<Map<String, Object>>> getRatingSummary(

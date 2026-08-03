@@ -29,6 +29,7 @@ public class ContentClient {
     private final String readUrl;
     private final String searchUrl;
     private final String updateUrl;
+    private final String hierarchyUrl;
     private final int searchLimit;
 
     public ContentClient(
@@ -36,12 +37,45 @@ public class ContentClient {
             @Value("${content.read-url:http://localhost:9000/content/v4/read}") String readUrl,
             @Value("${content.search-url:http://localhost:8080/v1/search}") String searchUrl,
             @Value("${content.update-url:http://localhost:8080/system/v3/content/update/}") String updateUrl,
+            @Value("${content.hierarchy-url:http://localhost:9000/content/v3/hierarchy}") String hierarchyUrl,
             @Value("${content.search-limit:200}") int searchLimit) {
         this.restTemplate = contentRestTemplate;
         this.readUrl = readUrl;
         this.searchUrl = searchUrl;
         this.updateUrl = updateUrl;
+        this.hierarchyUrl = hierarchyUrl;
         this.searchLimit = searchLimit;
+    }
+
+    /** Reads a content's hierarchy ({@code /content/v3/hierarchy/{id}?hierarchyType=detail}); returns
+     * the {@code result.content} map or null. Used to resolve an assessment's parent + content type. */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getHierarchyContent(String contentId) {
+        String url = hierarchyUrl + "/" + contentId + "?hierarchyType=detail";
+        try {
+            Map<String, Object> body = restTemplate.getForObject(url, Map.class);
+            if (body != null && "OK".equalsIgnoreCase(String.valueOf(body.get("responseCode")))) {
+                Map<String, Object> result = (Map<String, Object>) body.get("result");
+                return result == null ? null : (Map<String, Object>) result.get("content");
+            }
+        } catch (RestClientException e) {
+            log.warn("getHierarchyContent failed for {}: {}", contentId, e.getMessage());
+        }
+        return null;
+    }
+
+    /** Parent identifier of a content (empty string if none), via the hierarchy read. */
+    public String getParentIdentifier(String contentId) {
+        Map<String, Object> content = getHierarchyContent(contentId);
+        Object parent = content == null ? null : content.get("parent");
+        return parent == null ? "" : parent.toString();
+    }
+
+    /** Content type of a content (empty string if unresolved), via the hierarchy read. */
+    public String getContentType(String contentId) {
+        Map<String, Object> content = getHierarchyContent(contentId);
+        Object type = content == null ? null : content.get("contentType");
+        return type == null ? "" : type.toString();
     }
 
     /** Reads a content's metadata; returns the {@code result.content} map, or null on miss/error. */

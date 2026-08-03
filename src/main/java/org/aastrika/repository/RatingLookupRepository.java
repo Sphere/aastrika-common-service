@@ -19,6 +19,15 @@ public interface RatingLookupRepository {
      */
     List<Row> findPage(String activityId, String activityType, Float rating, String updatedOnCursor, int limit);
 
+    /** True if any lookup row exists for the given activity + star partition (aggregation upkeep). */
+    boolean existsForStar(String activityId, String activityType, float rating);
+
+    /** Deletes the specific lookup row (aggregation upkeep — remove the pre-update star entry). */
+    void delete(String activityId, String activityType, float rating, UUID updatedOn);
+
+    /** Inserts a lookup row (aggregation upkeep — add the post-update star entry). */
+    void insert(String activityId, String activityType, float rating, UUID updatedOn, String review, String userId);
+
     /** A single {@code ratings_lookup} row. */
     record Row(String activityId, String activityType, Float rating, UUID updatedOn, String review, String userId) {
     }

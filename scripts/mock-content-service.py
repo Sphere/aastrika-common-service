@@ -75,10 +75,28 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.startswith("/v1/search"):
             self._send({"id": "api.content.search", "ver": "3.0", "responseCode": "OK",
                         "result": {"count": 0, "content": []}})
+        elif self.path.startswith("/private/user/v1/search"):
+            # Assessment submit user validation. userId "invalid-user" -> count 0 (rejected).
+            uid = (((body or {}).get("request") or {}).get("filters") or {}).get("userId")
+            count = 0 if uid == "invalid-user" else 1
+            self._send({"id": "api.user.search", "ver": "v1", "responseCode": "OK",
+                        "result": {"response": {"count": count,
+                                                "content": ([] if count == 0 else [{"userId": uid}])}}})
         else:
             self._send({"responseCode": "OK", "result": {}})
 
     def do_GET(self):
+        if "/content/v3/hierarchy/" in self.path:
+            cid = self.path.split("/content/v3/hierarchy/")[1].split("?")[0]
+            print(f"[MOCK] GET hierarchy {cid}", flush=True)
+            if cid == "assess-1":
+                content = {"identifier": "assess-1", "parent": "course-1", "contentType": "SelfAssess"}
+            elif cid == "course-1":
+                content = {"identifier": "course-1", "parent": None, "contentType": "Course"}
+            else:
+                content = {"identifier": cid, "parent": None, "contentType": "Resource"}
+            self._send({"responseCode": "OK", "result": {"content": content}})
+            return
         self._send({"responseCode": "OK", "result": {"healthy": True}})
 
     def log_message(self, *args):

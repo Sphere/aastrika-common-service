@@ -581,31 +581,6 @@
           }
         },
         {
-          "name": "R2. Read a user's rating (GET /ratings/v1/read/...)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"has response object\", () => pm.expect(pm.response.json().result).to.have.property(\"response\"));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/ratings/v1/read/course-900/Course/user-500",
-              "host": ["{{baseUrl}}"],
-              "path": ["ratings", "v1", "read", "course-900", "Course", "user-500"]
-            },
-            "description": "Read a single user's rating for an activity (run R1 first to have data)."
-          }
-        },
-        {
           "name": "R3. Batch read (POST /ratings/v2/read)",
           "event": [
             {
@@ -793,6 +768,146 @@
               "query": [ { "key": "tag", "value": "bogusTag" } ]
             },
             "description": "Unsupported tag -> 400 'Please provide a valid Tag'."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assessment",
+      "description": "POST /v2/user/assessment/submit — the only consumed assessment endpoint. Scoring is in-memory (the answer key rides in the request: each option carries isCorrect + the user's userSelected/response). Returns the raw score summary with HTTP 201 (NOT the AppResponse envelope — preserved for the live client contract).\n\nExternal calls: user validation (user-search) and content hierarchy (getParent/getContentType). For local testing point user.search-url at the mock (scripts/mock-content-service.py) and content.hierarchy-url at the real content service.",
+      "item": [
+        {
+          "name": "A1. Submit quiz (isAssessment=false)  -> 201, result 33.33",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"has score fields\", () => { const b = pm.response.json(); pm.expect(b).to.have.property(\"result\"); pm.expect(b).to.have.property(\"correct\"); pm.expect(b).to.have.property(\"total\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "userId", "value": "{{targetUser}}" },
+              { "key": "rootOrg", "value": "org1" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"timeLimit\": 600,\n  \"isAssessment\": false,\n  \"identifier\": \"do_1139209447509688321472\",\n  \"title\": \"Test Quiz\",\n  \"questions\": [\n    { \"questionId\": \"q1\", \"questionType\": \"mcq-sca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":true}, {\"optionId\":\"o2\",\"isCorrect\":false,\"userSelected\":false} ] },\n    { \"questionId\": \"q2\", \"questionType\": \"mcq-sca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":false}, {\"optionId\":\"o2\",\"isCorrect\":false,\"userSelected\":true} ] },\n    { \"questionId\": \"q3\", \"questionType\": \"mcq-sca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":false}, {\"optionId\":\"o2\",\"isCorrect\":false,\"userSelected\":false} ] }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v2/user/assessment/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["v2", "user", "assessment", "submit"]
+            },
+            "description": "1 correct + 1 incorrect + 1 blank -> result 33.33. Writes user_quiz_master + user_quiz_summary."
+          }
+        },
+        {
+          "name": "A2. Submit assessment (isAssessment=true)  -> 201, result 100",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"scored\", () => pm.expect(pm.response.json()).to.have.property(\"result\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "userId", "value": "{{targetUser}}" },
+              { "key": "rootOrg", "value": "org1" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"timeLimit\": 600,\n  \"isAssessment\": true,\n  \"identifier\": \"do_1139209447509688321472\",\n  \"title\": \"Test Assessment\",\n  \"questions\": [\n    { \"questionId\": \"q1\", \"questionType\": \"mcq-sca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":true}, {\"optionId\":\"o2\",\"isCorrect\":false,\"userSelected\":false} ] },\n    { \"questionId\": \"q2\", \"questionType\": \"mcq-mca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":true}, {\"optionId\":\"o2\",\"isCorrect\":true,\"userSelected\":true} ] }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v2/user/assessment/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["v2", "user", "assessment", "submit"]
+            },
+            "description": "Writes user_assessment_master. The user_assessment_summary row is only written when the identifier's parent resolves to a Course (parentContentType == 'course')."
+          }
+        },
+        {
+          "name": "A3. Invalid user -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "userId", "value": "invalid-user" },
+              { "key": "rootOrg", "value": "org1" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"timeLimit\": 600,\n  \"isAssessment\": false,\n  \"identifier\": \"do_1139209447509688321472\",\n  \"title\": \"Test Quiz\",\n  \"questions\": [ { \"questionId\": \"q1\", \"questionType\": \"mcq-sca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":true} ] } ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v2/user/assessment/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["v2", "user", "assessment", "submit"]
+            },
+            "description": "userId 'invalid-user' -> the mock user-search returns count 0 -> 'Invalid UserId.' 400. (Against a real user service, use any non-existent userId.)"
+          }
+        },
+        {
+          "name": "A4. Missing identifier -> 400 (validation)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "userId", "value": "{{targetUser}}" },
+              { "key": "rootOrg", "value": "org1" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"timeLimit\": 600,\n  \"isAssessment\": false,\n  \"title\": \"Test Quiz\",\n  \"questions\": [ { \"questionId\": \"q1\", \"questionType\": \"mcq-sca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":true} ] } ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v2/user/assessment/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["v2", "user", "assessment", "submit"]
+            },
+            "description": "Body missing the required 'identifier' -> bean validation 400."
           }
         }
       ]

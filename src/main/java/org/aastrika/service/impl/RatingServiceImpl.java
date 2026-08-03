@@ -89,17 +89,6 @@ public class RatingServiceImpl implements RatingService {
     }
 
     @Override
-    public AppResponse<Map<String, Object>> getRating(String activityId, String activityType, String userId) {
-        RatingKey key = new RatingKey(activityId, activityType, userId);
-        RatingInfo ratingInfo = ratingRepository.findById(key).map(RatingServiceImpl::toRatingInfo).orElse(null);
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("message", "Successful");
-        result.put("response", ratingInfo);
-        return AppResponse.success(READ_API_ID, result, HttpStatus.OK);
-    }
-
-    @Override
     public AppResponse<Map<String, Object>> upsertRating(RequestRating request) {
         UUID now = Uuids.timeBased();
         RatingKey key = new RatingKey(request.getActivityId(), request.getActivityType(), request.getUserId());

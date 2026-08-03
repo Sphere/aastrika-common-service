@@ -10,12 +10,6 @@ import org.aastrika.dto.response.AppResponse;
 public interface RatingService {
 
     /**
-     * A single user's rating for an activity. Returns a 200 with a {@code null} result when no
-     * rating exists (matching the source's read-is-not-an-error behaviour).
-     */
-    AppResponse<Map<String, Object>> getRating(String activityId, String activityType, String userId);
-
-    /**
      * Create or update a user's rating for an activity. A rating add/update also emits a Kafka event
      * for the aggregation pipeline; a comment-only update does not.
      */

@@ -11,6 +11,7 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -71,6 +72,12 @@ public class ApplicationExceptionHandler {
   public ResponseEntity<AppResponse> handleIllegalArgument(IllegalArgumentException exception) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .body(AppResponse.error(null, exception.getMessage(), HttpStatus.BAD_REQUEST));
+  }
+
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<AppResponse> handleNoResourceFound(NoResourceFoundException exception) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .body(AppResponse.error(null, exception.getMessage(), HttpStatus.NOT_FOUND));
   }
 
   @ExceptionHandler(Exception.class)

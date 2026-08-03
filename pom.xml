@@ -32,6 +32,18 @@
         <!-- Override Tomcat version to fix CVE-2025-24813, CVE-2025-31651, CVE-2025-55754 -->
         <tomcat.version>10.1.36</tomcat.version>
     </properties>
+    <dependencyManagement>
+        <dependencies>
+            <!-- Force this version everywhere in the tree, regardless of which transitive path
+                 (jclouds via cloud-store-sdk, the Cassandra driver, etc.) declares it and at what
+                 depth. More robust than a plain top-level dependency + per-artifact exclusion. -->
+            <dependency>
+                <groupId>com.typesafe</groupId>
+                <artifactId>config</artifactId>
+                <version>1.4.3</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -55,7 +67,72 @@
             <artifactId>opensearch-rest-client</artifactId>
             <version>2.19.1</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.sunbird</groupId>
+            <artifactId>cloud-store-sdk_2.12</artifactId>
+            <version>1.3.0</version>
+            <exclusions>
+                <!-- Wildcard artifactId: cloud-store-sdk pulls in jackson-module-scala under a
+                     Scala-RC-suffixed artifactId (jackson-module-scala_2.12.0-RC1, an ancient
+                     2.7.8 build). Excluding the exact "jackson-module-scala_2.12" coordinate does
+                     NOT catch that - Maven exclusions need an exact groupId:artifactId match, and
+                     the RC-suffixed artifactId is a different string. The old jar gets picked up
+                     by Hibernate 6's Jackson module auto-discovery (findAndRegisterModules()) and
+                     throws "Incompatible Jackson version" against the Boot 3.4.2-managed
+                     jackson-databind (2.18.2), crashing EntityManagerFactory startup. Wildcard
+                     excludes the whole com.fasterxml.jackson.module group regardless of suffix. -->
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.module</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-annotations</artifactId>
+                </exclusion>
+                <!-- cloud-store-sdk pulls in the old jclouds stack, which drags in an ancient
+                     com.typesafe:config:1.3.0. That version lacks ConfigFactory
+                     .defaultReferenceUnresolved(), which Spring Boot 3.4.x's
+                     CassandraAutoConfiguration calls when building the driver's
+                     DriverConfigLoader, crashing app startup with a NoSuchMethodError-style
+                     failure. Exclude it here and pin a current version below instead. -->
+                <exclusion>
+                    <groupId>com.typesafe</groupId>
+                    <artifactId>config</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+            <version>1.4.3</version>
+        </dependency>
+        <!-- Required directly by cloud-store-sdk_2.12's public API (scala.Option params) and by
+             StorageServiceImpl, which imports scala.Option to call it. Declared explicitly rather
+             than relying on it resolving transitively from cloud-store-sdk_2.12. -->
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>2.12.18</version>
+        </dependency>
+        <!-- jclouds-core:2.2.1 (transitive via cloud-store-sdk_2.12) references the old
+             javax.xml.bind.* (JAXB) package. That package was bundled in the JDK through
+             Java 8 and fully removed in Java 11+, so on Java 21 it must be added explicitly.
+             This is a different namespace from the jakarta.xml.bind-api/jaxb-runtime jars
+             already on the classpath (Jakarta EE 9+ rename) - jclouds 2.2.1 predates that
+             rename and won't resolve against the jakarta.* classes. -->
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -90,6 +167,12 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
+        </dependency>
+
         <!-- Cassandra: Spring Data starter - auto-configures a CqlSession (and CassandraTemplate)
              from spring.cassandra.* properties. Version managed by the Spring Boot parent BOM.
              NOTE: the CqlSession connects at startup, so Cassandra must be reachable to boot. -->

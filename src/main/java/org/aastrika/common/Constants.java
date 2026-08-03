@@ -113,4 +113,8 @@ public class Constants {
     public static final String RECIPIENT_EMAILS = "recipientEmails";
     public static final String SET_PASSWORD_LINK = "setPasswordLink";
     public static final String SUBJECT = "subject";
+    public static final String API_FILE_UPLOAD = "";
+    public static final String API_FILE_DELETE = "";
+    public static final String API_FILE_DOWNLOAD = "";
+    public static final String LOCAL_BASE_PATH = "";
 }

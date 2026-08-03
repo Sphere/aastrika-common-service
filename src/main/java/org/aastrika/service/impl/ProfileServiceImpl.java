@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aastrika.client.Producer;
 import org.aastrika.common.Constants;
 import org.aastrika.config.ServerConfig;
+import org.aastrika.dao.CassandraDao;
 import org.aastrika.dto.response.SBApiResponse;
 import org.aastrika.service.IndexerService;
 import org.aastrika.service.ProfileService;
@@ -22,6 +23,7 @@ import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,8 +53,11 @@ public class ProfileServiceImpl implements ProfileService {
     @Autowired
     Producer kafkaProducer;
 
-//    @Autowired
-//    StorageServiceImpl storageService;
+    @Autowired
+    StorageServiceImpl storageService;
+
+    @Autowired
+    CassandraDao cassandraDao;
 
 
     @Override
@@ -194,12 +199,17 @@ public class ProfileServiceImpl implements ProfileService {
                 put(Constants.ID, userId);
             }
         };
-        Map<String, Object> updateDBResponse = null;
-//        Map<String, Object> updateDBResponse = cassandraOperation.updateRecord(Constants.KEYSPACE_SUNBIRD,
-//                Constants.TABLE_USER, updateDBRequest, compositeKey);
-        if (updateDBResponse != null
-                && !Constants.SUCCESS.equalsIgnoreCase((String) updateDBResponse.get(Constants.RESPONSE))) {
+
+        // Single, non-batched insert (YCQL/Yugabyte compatibility - see
+        // sunbird-cb-ext@dcb1547): Cassandra INSERT on an existing primary key only
+        // sets the supplied columns and leaves the rest of the row untouched.
+        Map<String, Object> updateRow = new HashMap<>(updateDBRequest);
+        updateRow.putAll(compositeKey);
+        try {
+            cassandraDao.insert(Constants.KEYSPACE_SUNBIRD, Constants.TABLE_USER, updateRow);
+        } catch (Exception e) {
             errMsg = String.format("Failed to update profileDetails for UserId : %s", userId);
+            log.error(errMsg, e);
             response.getParams().setErrmsg(errMsg);
             return response;
         }
@@ -223,16 +233,6 @@ public class ProfileServiceImpl implements ProfileService {
         response.getResult().put(Constants.RESPONSE, Constants.SUCCESS);
         response.getParams().setStatus(Constants.SUCCESS);
         return response;
-    }
-
-    @Override
-    public SBApiResponse bulkUpload(MultipartFile mFile, String orgId, String orgName, String userId) {
-        return null;
-    }
-
-    @Override
-    public SBApiResponse getBulkUploadDetails(String orgId) {
-        return null;
     }
 
     private String validateMigrateRequest(Map<String, Object> requestBody) {
@@ -317,9 +317,8 @@ public class ProfileServiceImpl implements ProfileService {
     private Map<String, Object> getUserDetailsForId(String userId) {
         Map<String, Object> request = new HashMap<>();
         request.put(Constants.ID, userId);
-        List<Map<String, Object>> userList = null;
-//        List<Map<String, Object>> userList = cassandraOperation.getRecordsByProperties(Constants.KEYSPACE_SUNBIRD,
-//                Constants.TABLE_USER, request, null);
+        List<Map<String, Object>> userList = cassandraDao.findByProperties(Constants.KEYSPACE_SUNBIRD,
+                Constants.TABLE_USER, request, null);
         if (CollectionUtils.isNotEmpty(userList)) {
             return userList.get(0);
         } else {
@@ -327,91 +326,93 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
-//    @Override
-//    public SBApiResponse bulkUpload(MultipartFile mFile, String orgId, String orgName, String userId) {
-//        SBApiResponse response = ProjectUtil.createDefaultResponse(Constants.API_USER_BULK_UPLOAD);
-//        try {
-//            SBApiResponse uploadResponse = storageService.uploadFile(mFile, serverConfig.getBulkUploadContainerName());
-//            if (!HttpStatus.OK.equals(uploadResponse.getResponseCode())) {
-//                setErrorData(response, String.format("Failed to upload file. Error: %s",
-//                        (String) uploadResponse.getParams().getErrmsg()));
-//                return response;
-//            }
-//
-//            Map<String, Object> uploadedFile = new HashMap<>();
-//            uploadedFile.put(Constants.ROOT_ORG_ID, orgId);
-//            uploadedFile.put(Constants.IDENTIFIER, UUID.randomUUID().toString());
-//            uploadedFile.put(Constants.FILE_NAME, uploadResponse.getResult().get(Constants.NAME));
-//            uploadedFile.put(Constants.FILE_PATH, uploadResponse.getResult().get(Constants.URL));
-//            uploadedFile.put(Constants.DATE_CREATED_ON, new Timestamp(System.currentTimeMillis()));
-//            uploadedFile.put(Constants.STATUS, Constants.INITIATED_CAPITAL);
-//            uploadedFile.put(Constants.COMMENT, StringUtils.EMPTY);
-//            uploadedFile.put(Constants.CREATED_BY, userId);
-//
-//            SBApiResponse insertResponse = cassandraOperation.insertRecord(Constants.DATABASE,
-//                    Constants.TABLE_USER_BULK_UPLOAD, uploadedFile);
-//
-//            if (!Constants.SUCCESS.equalsIgnoreCase((String) insertResponse.get(Constants.RESPONSE))) {
-//                setErrorData(response, "Failed to update database with user bulk upload file details.");
-//                return response;
-//            }
-//
-//            response.getParams().setStatus(Constants.SUCCESSFUL);
-//            response.setResponseCode(HttpStatus.OK);
-//            response.getResult().putAll(uploadedFile);
-//            uploadedFile.put(Constants.ORG_NAME, orgName);
-//            kafkaProducer.push(serverConfig.getUserBulkUploadTopic(), uploadedFile);
-//            sendBulkUploadNotification(orgId, orgName, (String) uploadResponse.getResult().get(Constants.URL));
-//        } catch (Exception e) {
-//            setErrorData(response,
-//                    String.format("Failed to process user bulk upload request. Error: ", e.getMessage()));
-//        }
-//        return response;
-//    }
-//
-//    private void sendBulkUploadNotification(String orgId, String orgName, String fileUrl) {
-//        for (String email : serverConfig.getBulkUploadEmailNotificationList()) {
-//            if (StringUtils.isBlank(email)) {
-//                return;
-//            }
-//        }
-//        Map<String, Object> request = new HashMap<>();
-//        Map<String, Object> requestBody = new HashMap<String, Object>();
-//        requestBody.put(Constants.BODY, Constants.HELLO);
-//        requestBody.put(Constants.EMAIL_TEMPLATE_TYPE, serverConfig.getBulkUploadEmailTemplate());
-//        requestBody.put(Constants.LINK, fileUrl);
-//        requestBody.put(Constants.MODE, Constants.EMAIL);
-//        requestBody.put(Constants.ORG_NAME, orgName);
-//        requestBody.put(Constants.ORG_ID, orgId);
-//        requestBody.put(Constants.RECIPIENT_EMAILS, serverConfig.getBulkUploadEmailNotificationList());
-//        requestBody.put(Constants.SET_PASSWORD_LINK, true);
-//        requestBody.put(Constants.SUBJECT, serverConfig.getBulkUploadEmailNotificationSubject());
-//
-//        request.put(Constants.REQUEST, requestBody);
-//
-//        outboundRequestHandlerService.fetchResultUsingPost(
-//                serverConfig.getSbUrl() + serverConfig.getSbSendNotificationEmailPath(), request,
-//                ProjectUtil.getDefaultHeaders());
-//    }
-//
-//    @Override
-//    public SBApiResponse getBulkUploadDetails(String orgId) {
-//        SBApiResponse response = ProjectUtil.createDefaultResponse(Constants.API_USER_BULK_UPLOAD_STATUS);
-//        try {
-//            Map<String, Object> propertyMap = new HashMap<>();
-//            if (StringUtils.isNotBlank(orgId)) {
-//                propertyMap.put(Constants.ROOT_ORG_ID, orgId);
-//            }
-//            List<Map<String, Object>> bulkUploadList = cassandraOperation.getRecordsByProperties(Constants.DATABASE,
-//                    Constants.TABLE_USER_BULK_UPLOAD, propertyMap, serverConfig.getBulkUploadStatusFields());
-//            response.getParams().setStatus(Constants.SUCCESSFUL);
-//            response.setResponseCode(HttpStatus.OK);
-//            response.getResult().put(Constants.CONTENT, bulkUploadList);
-//            response.getResult().put(Constants.COUNT, bulkUploadList != null ? bulkUploadList.size() : 0);
-//        } catch (Exception e) {
-//            setErrorData(response,
-//                    String.format("Failed to get user bulk upload request status. Error: ", e.getMessage()));
-//        }
-//        return response;
-//    }
+    @Override
+    public SBApiResponse bulkUpload(MultipartFile mFile, String orgId, String orgName, String userId) {
+        SBApiResponse response = ProjectUtil.createDefaultResponse(Constants.API_USER_BULK_UPLOAD);
+        try {
+            SBApiResponse uploadResponse = storageService.uploadFile(mFile, serverConfig.getBulkUploadContainerName());
+            if (!HttpStatus.OK.equals(uploadResponse.getResponseCode())) {
+                setErrorData(response, String.format("Failed to upload file. Error: %s",
+                        (String) uploadResponse.getParams().getErrmsg()));
+                return response;
+            }
+
+            Map<String, Object> uploadedFile = new HashMap<>();
+            uploadedFile.put(Constants.ROOT_ORG_ID, orgId);
+            uploadedFile.put(Constants.IDENTIFIER, UUID.randomUUID().toString());
+            uploadedFile.put(Constants.FILE_NAME, uploadResponse.getResult().get(Constants.NAME));
+            uploadedFile.put(Constants.FILE_PATH, uploadResponse.getResult().get(Constants.URL));
+            uploadedFile.put(Constants.DATE_CREATED_ON, new Timestamp(System.currentTimeMillis()));
+            uploadedFile.put(Constants.STATUS, Constants.INITIATED_CAPITAL);
+            uploadedFile.put(Constants.COMMENT, StringUtils.EMPTY);
+            uploadedFile.put(Constants.CREATED_BY, userId);
+
+            // Single, non-batched insert (YCQL/Yugabyte compatibility - see
+            // sunbird-cb-ext@dcb1547).
+            try {
+                cassandraDao.insert(Constants.DATABASE, Constants.TABLE_USER_BULK_UPLOAD, uploadedFile);
+            } catch (Exception e) {
+                log.error("Failed to insert user bulk upload record for orgId: " + orgId, e);
+                setErrorData(response, "Failed to update database with user bulk upload file details.");
+                return response;
+            }
+
+            response.getParams().setStatus(Constants.SUCCESSFUL);
+            response.setResponseCode(HttpStatus.OK);
+            response.getResult().putAll(uploadedFile);
+            uploadedFile.put(Constants.ORG_NAME, orgName);
+            kafkaProducer.push(serverConfig.getUserBulkUploadTopic(), uploadedFile);
+            sendBulkUploadNotification(orgId, orgName, (String) uploadResponse.getResult().get(Constants.URL));
+        } catch (Exception e) {
+            setErrorData(response,
+                    String.format("Failed to process user bulk upload request. Error: ", e.getMessage()));
+        }
+        return response;
+    }
+
+    private void sendBulkUploadNotification(String orgId, String orgName, String fileUrl) {
+        for (String email : serverConfig.getBulkUploadEmailNotificationList()) {
+            if (StringUtils.isBlank(email)) {
+                return;
+            }
+        }
+        Map<String, Object> request = new HashMap<>();
+        Map<String, Object> requestBody = new HashMap<String, Object>();
+        requestBody.put(Constants.BODY, Constants.HELLO);
+        requestBody.put(Constants.EMAIL_TEMPLATE_TYPE, serverConfig.getBulkUploadEmailTemplate());
+        requestBody.put(Constants.LINK, fileUrl);
+        requestBody.put(Constants.MODE, Constants.EMAIL);
+        requestBody.put(Constants.ORG_NAME, orgName);
+        requestBody.put(Constants.ORG_ID, orgId);
+        requestBody.put(Constants.RECIPIENT_EMAILS, serverConfig.getBulkUploadEmailNotificationList());
+        requestBody.put(Constants.SET_PASSWORD_LINK, true);
+        requestBody.put(Constants.SUBJECT, serverConfig.getBulkUploadEmailNotificationSubject());
+
+        request.put(Constants.REQUEST, requestBody);
+
+        outboundRequestHandlerService.fetchResultUsingPost(
+                serverConfig.getSbUrl() + serverConfig.getSbSendNotificationEmailPath(), request,
+                ProjectUtil.getDefaultHeaders());
+    }
+
+    @Override
+    public SBApiResponse getBulkUploadDetails(String orgId) {
+        SBApiResponse response = ProjectUtil.createDefaultResponse(Constants.API_USER_BULK_UPLOAD_STATUS);
+        try {
+            Map<String, Object> propertyMap = new HashMap<>();
+            if (StringUtils.isNotBlank(orgId)) {
+                propertyMap.put(Constants.ROOT_ORG_ID, orgId);
+            }
+            List<Map<String, Object>> bulkUploadList = cassandraDao.findByProperties(Constants.DATABASE,
+                    Constants.TABLE_USER_BULK_UPLOAD, propertyMap, serverConfig.getBulkUploadStatusFields());
+            response.getParams().setStatus(Constants.SUCCESSFUL);
+            response.setResponseCode(HttpStatus.OK);
+            response.getResult().put(Constants.CONTENT, bulkUploadList);
+            response.getResult().put(Constants.COUNT, bulkUploadList != null ? bulkUploadList.size() : 0);
+        } catch (Exception e) {
+            setErrorData(response,
+                    String.format("Failed to get user bulk upload request status. Error: ", e.getMessage()));
+        }
+        return response;
+    }
 }

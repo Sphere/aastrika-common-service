@@ -57,6 +57,43 @@ public class ServerConfig {
     @Value("${sb.es.user.profile.index}")
     private String sbEsUserProfileIndex;
 
+    @Value("${user.bulk.upload.container.name}")
+    private String bulkUploadContainerName;
+
+    @Value("${cloud.container.name}")
+    private String cloudContainerName;
+
+    @Value("${user.bulk.upload.email.notification.list}")
+    private String bulkUploadEmailNotificationList;
+
+    @Value("${kafka.topics.user.bulk.upload}")
+    private String userBulkUploadTopic;
+
+    @Value("${user.bulk.upload.email.template}")
+    private String bulkUploadEmailTemplate;
+
+    @Value("${user.bulk.upload.email.notification.subject}")
+    private String bulkUploadEmailNotificationSubject;
+
+    @Value("${user.bulk.upload.status.fields}")
+    private String bulkUploadStatusFields;
+
+    @Value("${sb.service.send.notify.email.path}")
+    private String sbSendNotificationEmailPath;
+
+    @Value("${cloud.storage.type.name}")
+    private String cloudStorageTypeName;
+
+    @Value("${cloud.storage.key}")
+    private String cloudStorageKey;
+
+    @Value("${cloud.storage.secret}")
+    private String cloudStorageSecret;
+
+    @Value("${cloud.storage.cephs3.endpoint}")
+    private String cloudStorageCephs3Endpoint;
+
+
     public String[] getEsHostList() {
         return esHostList.split(",", -1);
     }
@@ -71,5 +108,18 @@ public class ServerConfig {
     public String[] getSbEsHostList() {
         return sbEsHostList.split(",", -1);
     }
+
+    public String getCloudContainerName() {
+        return cloudContainerName;
+    }
+
+    public List<String> getBulkUploadEmailNotificationList() {
+        return Arrays.asList(bulkUploadEmailNotificationList.split(",", -1));
+    }
+
+    public List<String> getBulkUploadStatusFields() {
+        return Arrays.asList(bulkUploadStatusFields.split(",", -1));
+    }
+
 
 }

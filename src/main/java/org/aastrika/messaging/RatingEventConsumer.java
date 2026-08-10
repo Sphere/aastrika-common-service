@@ -1,6 +1,7 @@
 package org.aastrika.messaging;
 
 import org.aastrika.dto.event.RatingMessage;
+import org.aastrika.exception.NotEnrolledException;
 import org.aastrika.service.RatingAggregationService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -36,6 +37,20 @@ public class RatingEventConsumer {
             concurrency = "1")
     public void onMessage(String message) throws Exception {
         RatingMessage event = objectMapper.readValue(message, RatingMessage.class);
-        aggregationService.aggregate(event);
+        try {
+            aggregationService.aggregate(event);
+        } catch (NotEnrolledException e) {
+            // An expected rejection rather than a defect, but it silently discards the event, so it
+            // needs a visible cause. Logged without the exception: its message carries the user id,
+            // and SECURITY.md 2.5 forbids logging PII at any level.
+            log.error("Rating aggregation rejected — user not enrolled in activity {} ({}); "
+                            + "routing to the dead-letter topic",
+                    event.getActivity_id(), event.getActivity_Type());
+            throw e;
+        } catch (Exception e) {
+            log.error("Rating aggregation failed for activity {} ({}): {}",
+                    event.getActivity_id(), event.getActivity_Type(), e.getMessage(), e);
+            throw e;
+        }
     }
 }

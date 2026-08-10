@@ -1,4 +1,4 @@
-package org.aastrika.entity;
+package org.aastrika.datalake.entity;
 
 import java.time.LocalDateTime;
 
@@ -15,6 +15,10 @@ import lombok.NoArgsConstructor;
  * Maps {@code public.leaderboard_table} (PostgreSQL). Ported from the source repo's entity, updated
  * from {@code javax.persistence} to {@code jakarta.persistence} for Spring Boot 3, with the
  * {@code etl_updated_date} column added. {@link #rank} is computed at read time and not persisted.
+ *
+ * <p>Being in {@code org.aastrika.datalake.entity} is what puts it on the data lake channel. That
+ * package is a sibling of {@code org.aastrika.entity} rather than a subpackage, so the two
+ * persistence units' scans cannot overlap and neither needs a filter — see {@code DataLakeJpaConfig}.
  */
 @Entity
 @Table(name = "leaderboard_table", schema = "public")

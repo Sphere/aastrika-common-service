@@ -2,7 +2,7 @@ package org.aastrika.dto.response;
 
 import java.util.List;
 
-import org.aastrika.entity.LeaderboardEntity;
+import org.aastrika.datalake.entity.LeaderboardEntity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

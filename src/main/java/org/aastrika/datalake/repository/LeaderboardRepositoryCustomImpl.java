@@ -1,10 +1,10 @@
-package org.aastrika.repository;
+package org.aastrika.datalake.repository;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.aastrika.entity.LeaderboardEntity;
+import org.aastrika.datalake.entity.LeaderboardEntity;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +21,13 @@ public class LeaderboardRepositoryCustomImpl implements LeaderboardRepositoryCus
 
     private static final String BASE_SELECT = "SELECT * FROM public.leaderboard_table WHERE 1=1";
 
-    @PersistenceContext
+    /**
+     * Bound to the data lake channel explicitly. This is a plain field injection performed by Spring,
+     * not by Spring Data, so it does not inherit the routing that the package placement gives the
+     * repository interface — without {@code unitName} it would inject the {@code @Primary} unit and
+     * silently query the wrong database. See {@code DataLakeJpaConfig}.
+     */
+    @PersistenceContext(unitName = "dataLake")
     private EntityManager entityManager;
 
     @Override
@@ -48,7 +54,7 @@ public class LeaderboardRepositoryCustomImpl implements LeaderboardRepositoryCus
      * Runs inside a transaction and flushes/clears the persistence context first so the single-user
      * lookup returns fresh state rather than a first-level-cache hit from the list query above.
      */
-    @Transactional
+    @Transactional("dataLakeTransactionManager")
     @Override
     public Optional<LeaderboardEntity> findUserByDynamicFilter(String userId, Map<String, Object> filters) {
         StringBuilder sql = new StringBuilder(BASE_SELECT);

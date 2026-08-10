@@ -26,18 +26,4 @@ public interface RatingService {
 
     /** A paginated page of reviews for an activity (newest first), enriched with reviewer names. */
     AppResponse<Map<String, Object>> ratingLookUp(RatingsLookupRequest request);
-
-    /**
-     * Ops job: pushes each activity's aggregate rating stats (avg + star counts) from
-     * {@code ratings_summary} into content metadata via the content system-update API.
-     */
-    AppResponse<Map<String, Object>> updateRatingsMetaData();
-
-    /**
-     * Ops job: adds/removes an additional tag ({@code mostEnrolled} / {@code mostTrending}) on content,
-     * driven by the course-id list held in Redis.
-     *
-     * @throws org.aastrika.exception.ApiException 400 if the tag is not supported
-     */
-    AppResponse<Map<String, Object>> updateAdditionalTag(String tag);
 }

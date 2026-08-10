@@ -33,3 +33,7 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Claude Code ###
+# settings.json is shared project config (registers the guard-git-writes hook) — keep it tracked.
+.claude/settings.local.json

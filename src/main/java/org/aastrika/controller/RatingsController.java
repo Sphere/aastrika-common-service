@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -54,16 +53,4 @@ public class RatingsController {
         return ResponseEntity.ok(ratingService.ratingLookUp(request));
     }
 
-    /** Ops job: push aggregate rating stats from ratings_summary into content metadata. */
-    @PostMapping("/ratings/meta/update")
-    public ResponseEntity<AppResponse<Map<String, Object>>> updateRatingsMetaData() {
-        return ResponseEntity.ok(ratingService.updateRatingsMetaData());
-    }
-
-    /** Ops job: add/remove an additional tag (mostEnrolled / mostTrending) on content. */
-    @PostMapping("/update/v1/content/additionaltag")
-    public ResponseEntity<AppResponse<Map<String, Object>>> updateAdditionalTag(
-            @RequestParam("tag") String tag) {
-        return ResponseEntity.ok(ratingService.updateAdditionalTag(tag));
-    }
 }

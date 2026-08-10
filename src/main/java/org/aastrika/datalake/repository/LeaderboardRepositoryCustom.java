@@ -1,10 +1,10 @@
-package org.aastrika.repository;
+package org.aastrika.datalake.repository;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.aastrika.entity.LeaderboardEntity;
+import org.aastrika.datalake.entity.LeaderboardEntity;
 
 /**
  * Dynamic-filter queries for the leaderboard that Spring Data derivation can't express. Filter keys

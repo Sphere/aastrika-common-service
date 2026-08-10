@@ -1,7 +1,5 @@
 package org.aastrika.service.impl;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -12,8 +10,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.aastrika.client.ContentClient;
-import org.aastrika.client.RatingTagRedisReader;
 import org.aastrika.dto.event.RatingMessage;
 import org.aastrika.dto.request.RatingsLookupRequest;
 import org.aastrika.dto.request.RatingsReadRequest;
@@ -52,21 +48,12 @@ public class RatingServiceImpl implements RatingService {
     private static final String UPDATE_API_ID = "api.ratings.update";
     private static final String SUMMARY_API_ID = "api.ratings.summary";
     private static final String LOOKUP_API_ID = "api.ratings.lookup";
-    private static final String META_UPDATE_API_ID = "api.ratings.content.meta.update";
-    private static final String ADDITIONAL_TAG_API_ID = "api.content.meta.update";
-
-    private static final String MOST_ENROLLED = "mostEnrolled";
-    private static final String MOST_TRENDING = "mostTrending";
-    private static final List<String> CONTENT_FIELDS = List.of("versionKey", "identifier", "additionalTags");
 
     private final RatingRepository ratingRepository;
     private final RatingSummaryRepository ratingSummaryRepository;
     private final RatingLookupRepository ratingLookupRepository;
     private final UserRepository userRepository;
     private final RatingEventPublisher ratingEventPublisher;
-    private final ContentClient contentClient;
-    private final RatingTagRedisReader ratingTagRedisReader;
-    private final int metaUpdateLimit;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public RatingServiceImpl(
@@ -74,18 +61,12 @@ public class RatingServiceImpl implements RatingService {
             RatingSummaryRepository ratingSummaryRepository,
             RatingLookupRepository ratingLookupRepository,
             UserRepository userRepository,
-            RatingEventPublisher ratingEventPublisher,
-            ContentClient contentClient,
-            RatingTagRedisReader ratingTagRedisReader,
-            @Value("${ratings.meta-update-limit:0}") int metaUpdateLimit) {
+            RatingEventPublisher ratingEventPublisher) {
         this.ratingRepository = ratingRepository;
         this.ratingSummaryRepository = ratingSummaryRepository;
         this.ratingLookupRepository = ratingLookupRepository;
         this.userRepository = userRepository;
         this.ratingEventPublisher = ratingEventPublisher;
-        this.contentClient = contentClient;
-        this.ratingTagRedisReader = ratingTagRedisReader;
-        this.metaUpdateLimit = metaUpdateLimit;
     }
 
     @Override
@@ -262,135 +243,6 @@ public class RatingServiceImpl implements RatingService {
         result.put("message", "Successful");
         result.put("response", content);
         return AppResponse.success(LOOKUP_API_ID, result, HttpStatus.OK);
-    }
-
-    @Override
-    public AppResponse<Map<String, Object>> updateRatingsMetaData() {
-        List<RatingSummary> summaries = ratingSummaryRepository.findAll();
-        if (metaUpdateLimit > 0 && summaries.size() > metaUpdateLimit) {
-            log.info("meta-update capped at {} of {} summary rows (ratings.meta-update-limit)",
-                    metaUpdateLimit, summaries.size());
-            summaries = summaries.subList(0, metaUpdateLimit);
-        }
-
-        int updated = 0;
-        int errored = 0;
-        for (RatingSummary summary : summaries) {
-            String contentId = summary.getKey().getActivityId();
-            Float total = summary.getTotalNumberOfRatings();
-            Float sum = summary.getSumOfTotalRatings();
-            if (total == null || total == 0f || sum == null) {
-                errored++;
-                continue;
-            }
-            Map<String, Object> content = contentClient.readContent(contentId, CONTENT_FIELDS);
-            if (content == null || content.get("versionKey") == null) {
-                errored++;
-                continue;
-            }
-            Map<String, Object> values = new LinkedHashMap<>();
-            values.put("versionKey", content.get("versionKey"));
-            values.put("avgRating",
-                    BigDecimal.valueOf(sum).divide(BigDecimal.valueOf(total), 1, RoundingMode.HALF_UP).floatValue());
-            values.put("totalNoOfRating", total.intValue());
-            values.put("countOf1StarRating", intValue(summary.getTotalCount1Stars()));
-            values.put("countOf2StarRating", intValue(summary.getTotalCount2Stars()));
-            values.put("countOf3StarRating", intValue(summary.getTotalCount3Stars()));
-            values.put("countOf4StarRating", intValue(summary.getTotalCount4Stars()));
-            values.put("countOf5StarRating", intValue(summary.getTotalCount5Stars()));
-
-            if (contentClient.updateContentMeta(contentId, values)) {
-                updated++;
-            } else {
-                errored++;
-            }
-        }
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("totalNumberOfUpdatedContent", updated);
-        result.put("totalNumberOfErrorContent", errored);
-        return AppResponse.success(META_UPDATE_API_ID, result, HttpStatus.OK);
-    }
-
-    @Override
-    public AppResponse<Map<String, Object>> updateAdditionalTag(String tag) {
-        List<String> latestCourseList = courseListForTag(tag);
-
-        List<String> currentlyTagged = contentClient.searchContent(tag).stream()
-                .map(m -> (String) m.get("identifier"))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        int updated = 0;
-        int errored = 0;
-
-        // Add the tag to courses that qualify now but aren't tagged yet.
-        for (String contentId : latestCourseList) {
-            if (currentlyTagged.contains(contentId)) {
-                continue;
-            }
-            if (applyTag(contentId, tag, false)) {
-                updated++;
-            } else {
-                errored++;
-            }
-        }
-
-        // Remove the tag from courses that are tagged but no longer qualify.
-        List<String> staleTagged = new ArrayList<>(currentlyTagged);
-        staleTagged.removeAll(latestCourseList);
-        for (String contentId : staleTagged) {
-            if (applyTag(contentId, tag, true)) {
-                updated++;
-            } else {
-                errored++;
-            }
-        }
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("totalNumberOfUpdatedContent", updated);
-        result.put("totalNumberOfErrorContent", errored);
-        return AppResponse.success(ADDITIONAL_TAG_API_ID, result, HttpStatus.OK);
-    }
-
-    private List<String> courseListForTag(String tag) {
-        if (MOST_ENROLLED.equalsIgnoreCase(tag)) {
-            return ratingTagRedisReader.mostEnrolled();
-        }
-        if (MOST_TRENDING.equalsIgnoreCase(tag)) {
-            return ratingTagRedisReader.mostTrending();
-        }
-        throw new ApiException(ADDITIONAL_TAG_API_ID, HttpStatus.BAD_REQUEST, "Please provide a valid Tag");
-    }
-
-    @SuppressWarnings("unchecked")
-    private boolean applyTag(String contentId, String tag, boolean remove) {
-        Map<String, Object> content = contentClient.readContent(contentId, CONTENT_FIELDS);
-        if (content == null || content.get("identifier") == null) {
-            return false;
-        }
-        List<String> tags = content.get("additionalTags") == null
-                ? new ArrayList<>()
-                : new ArrayList<>((List<String>) content.get("additionalTags"));
-        if (remove) {
-            if (tags.isEmpty()) {
-                return false;
-            }
-            tags.remove(tag);
-        } else {
-            if (tags.contains(tag)) {
-                return true;
-            }
-            tags.add(tag);
-        }
-        Map<String, Object> values = new LinkedHashMap<>();
-        values.put("versionKey", content.get("versionKey"));
-        values.put("additionalTags", tags);
-        return contentClient.updateContentMeta((String) content.get("identifier"), values);
-    }
-
-    private static int intValue(Float value) {
-        return value == null ? 0 : value.intValue();
     }
 
     private static Instant reviewDate(String dateTimeUuid) {

@@ -6,9 +6,51 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:7011", "type": "string" },
-    { "key": "actingUser", "value": "admin-hdr-user", "type": "string" },
-    { "key": "targetUser", "value": "demo-user-01", "type": "string" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:7011",
+      "type": "string"
+    },
+    {
+      "key": "actingUser",
+      "value": "admin-hdr-user",
+      "type": "string"
+    },
+    {
+      "key": "targetUser",
+      "value": "demo-user-01",
+      "type": "string"
+    },
+    {
+      "key": "ratingActivityId",
+      "value": "do_1134170689871134721450",
+      "type": "string"
+    },
+    {
+      "key": "ratingActivityType",
+      "value": "Course",
+      "type": "string"
+    },
+    {
+      "key": "ratingUserId",
+      "value": "8066f977-4b61-4232-b28e-c60a304b4d8a",
+      "type": "string"
+    },
+    {
+      "key": "unenrolledActivityId",
+      "value": "course-900",
+      "type": "string"
+    },
+    {
+      "key": "unenrolledUserId",
+      "value": "user-500",
+      "type": "string"
+    },
+    {
+      "key": "ratingValue",
+      "value": "1",
+      "type": "string"
+    }
   ],
   "item": [
     {
@@ -29,16 +71,31 @@
           ],
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"rootOrgId\": \"rootOrg-1\",\n  \"programId\": \"program-1\",\n  \"userId\": \"user-1\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/v1/certificate/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "certificate", "status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "certificate",
+                "status"
+              ]
             },
             "description": "Completion + certificate-generated status for (rootOrgId, programId, userId). 404 RESOURCE_NOT_FOUND if no completion row exists (Postgres user_program_completion)."
           }
@@ -58,16 +115,31 @@
           ],
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"rootOrgId\": \"rootOrg-1\",\n  \"programId\": \"program-1\",\n  \"userId\": \"user-1\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/v1/certificate/download",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "certificate", "download"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "certificate",
+                "download"
+              ]
             },
             "description": "Resolves the downloadable certificate URL. 404 RESOURCE_NOT_FOUND / 400 PROGRAM_NOT_COMPLETED / 404 CERTIFICATE_NOT_GENERATED depending on state."
           }
@@ -95,18 +167,34 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "x-authenticated-userid", "value": "{{actingUser}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "x-authenticated-userid",
+                "value": "{{actingUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"userId\": \"{{targetUser}}\",\n  \"typeName\": \"competency\",\n  \"competencyDetails\": [\n    {\n      \"competencyId\": \"comp-100\",\n      \"acquiredDetails\": {\n        \"acquiredChannel\": \"self\",\n        \"competencyLevelId\": \"level-2\",\n        \"effectiveDate\": \"2024-01-15T10:00:00Z\",\n        \"additionalParams\": { \"courseId\": \"course-abc\", \"score\": 88 }\n      },\n      \"additionalParams\": { \"source\": \"postman-test\" }\n    }\n  ]\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/passbook",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "passbook"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "passbook"
+              ]
             },
             "description": "Adds passbook entries for `userId` (from the body). The header user is stored as `createdBy`."
           }
@@ -128,18 +216,34 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-authenticated-userid", "value": "{{targetUser}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "x-authenticated-userid",
+                "value": "{{targetUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"typeName\": \"competency\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/passbook",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "passbook"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "passbook"
+              ]
             },
             "description": "Reads the authenticated user's own passbook. The user comes from the `x-authenticated-userid` header."
           }
@@ -161,17 +265,31 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"typeName\": \"competency\",\n  \"userIds\": [\"{{targetUser}}\", \"mig-test-user-001\"]\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/admin/user/v1/passbook",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "user", "v1", "passbook"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "v1",
+                "passbook"
+              ]
             },
             "description": "Reads passbooks for a list of users. No auth header required; users come from the body."
           }
@@ -199,18 +317,34 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "x-authenticated-userid", "value": "{{actingUser}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "x-authenticated-userid",
+                "value": "{{actingUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"userId\": \"{{targetUser}}\",\n  \"typeName\": \"competency\",\n  \"competencyDetails\": [\n    {\n      \"competencyId\": \"comp-100\",\n      \"acquiredDetails\": {\n        \"acquiredChannel\": \"self\",\n        \"competencyLevelId\": \"level-2\",\n        \"additionalParams\": { \"courseId\": \"course-abc\" }\n      }\n    }\n  ]\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/passbook",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "passbook"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "passbook"
+              ]
             },
             "description": "Re-adds the same competency + level + courseId as request #1, which the duplicate check rejects."
           }
@@ -232,18 +366,34 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "x-authenticated-userid", "value": "{{actingUser}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "x-authenticated-userid",
+                "value": "{{actingUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"userId\": \"dup-req-user\",\n  \"typeName\": \"competency\",\n  \"competencyDetails\": [\n    { \"competencyId\": \"c1\", \"acquiredDetails\": { \"acquiredChannel\": \"self\", \"competencyLevelId\": \"l1\" } },\n    { \"competencyId\": \"c1\", \"acquiredDetails\": { \"acquiredChannel\": \"self\", \"competencyLevelId\": \"l2\" } }\n  ]\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/passbook",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "passbook"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "passbook"
+              ]
             },
             "description": "The same competencyId appears twice in one request, which is rejected."
           }
@@ -265,18 +415,34 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-authenticated-userid", "value": "{{targetUser}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "x-authenticated-userid",
+                "value": "{{targetUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"typeName\": \"badge\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/passbook",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "passbook"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "passbook"
+              ]
             },
             "description": "typeName not in the configured supported list (passbook.supported-type-names)."
           }
@@ -298,18 +464,34 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-authenticated-userid", "value": "{{targetUser}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "x-authenticated-userid",
+                "value": "{{targetUser}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"typeName\": \"\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/passbook",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "passbook"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "passbook"
+              ]
             },
             "description": "Empty typeName fails the @NotBlank validation before reaching the service."
           }
@@ -331,17 +513,30 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"typeName\": \"competency\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/passbook",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "passbook"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "passbook"
+              ]
             },
             "description": "No x-authenticated-userid header -> handled as 400 (MissingRequestHeaderException handler)."
           }
@@ -371,17 +566,30 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"filters\": { \"state\": \"Kerala\" },\n  \"userId\": \"u2\",\n  \"limit\": 10,\n  \"offset\": 0\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/leaderboard",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "leaderboard"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "leaderboard"
+              ]
             },
             "description": "Ranked page for the filter, plus the active user's own rank. Filter keys must be leaderboard_table columns (state, profession, district, rootorgid, points, ...)."
           }
@@ -403,17 +611,30 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"filters\": { \"state\": \"Kerala\" },\n  \"userId\": \"u2\",\n  \"limit\": 2,\n  \"offset\": 1\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/leaderboard",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "leaderboard"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "leaderboard"
+              ]
             },
             "description": "Ranks continue from offset+1; count remains the total for the filter."
           }
@@ -435,17 +656,30 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"filters\": { \"userid; DROP TABLE x\": \"y\" },\n  \"userId\": \"u2\",\n  \"limit\": 10,\n  \"offset\": 0\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/leaderboard",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "leaderboard"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "leaderboard"
+              ]
             },
             "description": "A non-column filter key is rejected by the whitelist before it can reach SQL."
           }
@@ -467,17 +701,30 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"filters\": { \"state\": \"Kerala\" },\n  \"userId\": \"u5\",\n  \"limit\": 10,\n  \"offset\": 0\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/leaderboard",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "leaderboard"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "leaderboard"
+              ]
             },
             "description": "u5 is in Tamil Nadu, so it does not match the Kerala filter -> active user not found."
           }
@@ -498,17 +745,30 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"filters\": { \"state\": \"Kerala\" },\n  \"userId\": \"u2\",\n  \"limit\": 5000,\n  \"offset\": 0\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/leaderboard",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "leaderboard"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "leaderboard"
+              ]
             },
             "description": "limit is capped at 1000 by bean validation."
           }
@@ -529,17 +789,30 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"filters\": {},\n  \"userId\": \"u2\",\n  \"limit\": 10,\n  \"offset\": 0\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/user/v1/leaderboard",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "v1", "leaderboard"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "leaderboard"
+              ]
             },
             "description": "filters must be non-empty."
           }
@@ -548,36 +821,66 @@
     },
     {
       "name": "Ratings",
-      "description": "Migrated RatingsController endpoints (5 of 7). #6 (meta/update) and #7 (additionaltag) are deferred - they need an external learning service (8080) + content service API + Redis-populating ETL.\n\nNotes:\n- R1 (upsert) writes to Cassandra AND emits a Kafka event to dev.rating.event.\n- R4 (summary) / R5 (lookup) use a real activity id that has aggregated data (do_1139209447509688321472).",
+      "description": "The four implemented RatingsController endpoints. The meta-update and additional-tag ops jobs were removed as unused.\n\nNotes:\n- R1 (upsert) writes to Cassandra AND emits a Kafka event to dev.rating.event.\n- R1/R3/R4/R5 share collection variables pointing at a verified-enrolled user+activity, so the aggregation actually completes. An unenrolled pair is silently dropped to the DLQ (see R10).\n- R1 varies the rating each run: a zero delta is a no-op in the aggregation.",
       "item": [
         {
           "name": "R1. Upsert rating (POST /ratings/v1/upsert)",
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// The aggregation is delta-based: it only touches ratings_summary when the rating",
+                  "// actually CHANGES. Re-posting the same value is a silent no-op, so cycle 1..5 to",
+                  "// guarantee a non-zero delta on every run.",
+                  "const prev = Number(pm.collectionVariables.get(\"ratingValue\")) || 0;",
+                  "pm.collectionVariables.set(\"ratingValue\", prev >= 5 ? 1 : prev + 1);"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"responseCode is OK\", () => pm.expect(pm.response.json().responseCode).to.eql(\"OK\"));"
+                  "pm.test(\"responseCode is OK\", () => pm.expect(pm.response.json().responseCode).to.eql(\"OK\"));",
+                  "// The rating row is written synchronously; the summary is updated by the Kafka",
+                  "// consumer, so give it a moment before running R4."
                 ]
               }
             }
           ],
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"activityId\": \"course-900\",\n  \"activityType\": \"Course\",\n  \"userId\": \"user-500\",\n  \"rating\": 5,\n  \"review\": \"Excellent content\",\n  \"recommended\": \"yes\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "raw": "{\n  \"activityId\": \"{{ratingActivityId}}\",\n  \"activityType\": \"{{ratingActivityType}}\",\n  \"userId\": \"{{ratingUserId}}\",\n  \"rating\": {{ratingValue}},\n  \"review\": \"This course was genuinely useful and clearly structured. The examples were easy to follow and the pacing felt right across every module.\",\n  \"recommended\": \"yes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/ratings/v1/upsert",
-              "host": ["{{baseUrl}}"],
-              "path": ["ratings", "v1", "upsert"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ratings",
+                "v1",
+                "upsert"
+              ]
             },
-            "description": "Create/update a rating. Emits a Kafka event unless it's a comment-only update."
+            "description": "Create/update a rating. Emits a Kafka event unless it's a comment-only update.\n\nUses a verified-enrolled user: the aggregator drops events for users with no row in sunbird_courses.user_enrolments, so an unenrolled pair leaves the summary empty forever (see R10). The pre-request script varies the rating because a zero delta is a no-op."
           }
         },
         {
@@ -596,16 +899,31 @@
           ],
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"activityId\": \"course-900\",\n  \"activityType\": \"Course\",\n  \"userIds\": [\"user-500\", \"ghost-user\"]\n}",
-              "options": { "raw": { "language": "json" } }
+              "raw": "{\n  \"activityId\": \"{{ratingActivityId}}\",\n  \"activityType\": \"{{ratingActivityType}}\",\n  \"userIds\": [\n    \"{{ratingUserId}}\",\n    \"ghost-user\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/ratings/v2/read",
-              "host": ["{{baseUrl}}"],
-              "path": ["ratings", "v2", "read"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ratings",
+                "v2",
+                "read"
+              ]
             },
             "description": "Ratings for one activity across a list of users."
           }
@@ -618,7 +936,14 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "// A missing summary row still returns 200 with response=null, which is easy to mistake",
+                  "// for success. Assert it is populated so a dropped aggregation event fails loudly.",
+                  "pm.test(\"summary row exists\", () => {",
+                  "    pm.expect(pm.response.json().result.response, ",
+                  "        \"null summary - the aggregation event was probably DLQ'd, check the consumer log\"",
+                  "    ).to.not.be.null;",
+                  "});"
                 ]
               }
             }
@@ -627,11 +952,19 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/ratings/v1/summary/do_1139209447509688321472/Course",
-              "host": ["{{baseUrl}}"],
-              "path": ["ratings", "v1", "summary", "do_1139209447509688321472", "Course"]
+              "raw": "{{baseUrl}}/ratings/v1/summary/{{ratingActivityId}}/{{ratingActivityType}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ratings",
+                "v1",
+                "summary",
+                "{{ratingActivityId}}",
+                "{{ratingActivityType}}"
+              ]
             },
-            "description": "Star counts + latest reviews (enriched with reviewer first name)."
+            "description": "Star counts + latest reviews (enriched with reviewer first name).\n\nReturns 200 with response=null when no ratings_summary row exists. Reviews only appear in latest50reviews when longer than 100 chars (REVIEW_MIN_LENGTH)."
           }
         },
         {
@@ -650,16 +983,31 @@
           ],
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"activityId\": \"do_1139209447509688321472\",\n  \"activityType\": \"Course\",\n  \"limit\": 5\n}",
-              "options": { "raw": { "language": "json" } }
+              "raw": "{\n  \"activityId\": \"{{ratingActivityId}}\",\n  \"activityType\": \"{{ratingActivityType}}\",\n  \"limit\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/ratings/v1/ratingLookUp",
-              "host": ["{{baseUrl}}"],
-              "path": ["ratings", "v1", "ratingLookUp"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ratings",
+                "v1",
+                "ratingLookUp"
+              ]
             },
             "description": "Paginated reviews. Optional 'rating' filters by star; 'updateOn' is the cursor (updatedOnUuid of the last row)."
           }
@@ -679,95 +1027,79 @@
           ],
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"activityId\": \"course-900\",\n  \"activityType\": \"Course\",\n  \"userId\": \"user-500\",\n  \"rating\": 6\n}",
-              "options": { "raw": { "language": "json" } }
+              "raw": "{\n  \"activityId\": \"{{ratingActivityId}}\",\n  \"activityType\": \"{{ratingActivityType}}\",\n  \"userId\": \"{{ratingUserId}}\",\n  \"rating\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/ratings/v1/upsert",
-              "host": ["{{baseUrl}}"],
-              "path": ["ratings", "v1", "upsert"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ratings",
+                "v1",
+                "upsert"
+              ]
             },
             "description": "rating must be between 1 and 5."
           }
         },
         {
-          "name": "R7. Meta update (POST /ratings/meta/update)  [#6]",
+          "name": "R10. Upsert by NON-enrolled user -> 200, but aggregation drops it",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"has update counts\", () => pm.expect(pm.response.json().result).to.have.property(\"totalNumberOfUpdatedContent\"));"
+                  "pm.test(\"status is 200 (the upsert itself succeeds)\", () => pm.response.to.have.status(200));",
+                  "// Deliberately NOT asserting on the summary: this request exists to show that a 200",
+                  "// here does not mean the aggregation ran."
                 ]
               }
             }
           ],
           "request": {
             "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/ratings/meta/update",
-              "host": ["{{baseUrl}}"],
-              "path": ["ratings", "meta", "update"]
-            },
-            "description": "Ops job: pushes each activity's aggregate rating stats (avg + star counts) from ratings_summary into content metadata. Requires the content service (read) + learning service (system-update PATCH). Capped by ratings.meta-update-limit."
-          }
-        },
-        {
-          "name": "R8. Additional tag - mostEnrolled (POST /update/v1/content/additionaltag)  [#7]",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"has update counts\", () => pm.expect(pm.response.json().result).to.have.property(\"totalNumberOfUpdatedContent\"));"
-                ]
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/update/v1/content/additionaltag?tag=mostEnrolled",
-              "host": ["{{baseUrl}}"],
-              "path": ["update", "v1", "content", "additionaltag"],
-              "query": [ { "key": "tag", "value": "mostEnrolled" } ]
-            },
-            "description": "Adds/removes the tag on content, driven by the Redis (DB 12) list lhp_mostEnrolledTag. Valid tags: mostEnrolled, mostTrending. Requires Redis + content service + learning service."
-          }
-        },
-        {
-          "name": "R9. Additional tag - invalid tag -> 400",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
-                  "pm.test(\"errmsg mentions valid Tag\", () => pm.expect(pm.response.json().params.errmsg).to.include(\"valid Tag\"));"
-                ]
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": \"{{unenrolledActivityId}}\",\n  \"activityType\": \"Course\",\n  \"userId\": \"{{unenrolledUserId}}\",\n  \"rating\": 3,\n  \"recommended\": \"yes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
               }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/update/v1/content/additionaltag?tag=bogusTag",
-              "host": ["{{baseUrl}}"],
-              "path": ["update", "v1", "content", "additionaltag"],
-              "query": [ { "key": "tag", "value": "bogusTag" } ]
             },
-            "description": "Unsupported tag -> 400 'Please provide a valid Tag'."
+            "url": {
+              "raw": "{{baseUrl}}/ratings/v1/upsert",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ratings",
+                "v1",
+                "upsert"
+              ]
+            },
+            "description": "Regression guard for the trap that this endpoint returns 200 either way.\n\nThe rating row IS written, but the consumer throws NotEnrolledException (RatingAggregationServiceImpl:57), which is non-retryable, so the event goes straight to rating.failedRating and ratings_summary/ratings_lookup are never touched. Nothing in the HTTP response hints at this - check the consumer log or the DLQ depth."
           }
         }
       ]
@@ -793,19 +1125,39 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "userId", "value": "{{targetUser}}" },
-              { "key": "rootOrg", "value": "org1" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "userId",
+                "value": "{{targetUser}}"
+              },
+              {
+                "key": "rootOrg",
+                "value": "org1"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"timeLimit\": 600,\n  \"isAssessment\": false,\n  \"identifier\": \"do_1139209447509688321472\",\n  \"title\": \"Test Quiz\",\n  \"questions\": [\n    { \"questionId\": \"q1\", \"questionType\": \"mcq-sca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":true}, {\"optionId\":\"o2\",\"isCorrect\":false,\"userSelected\":false} ] },\n    { \"questionId\": \"q2\", \"questionType\": \"mcq-sca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":false}, {\"optionId\":\"o2\",\"isCorrect\":false,\"userSelected\":true} ] },\n    { \"questionId\": \"q3\", \"questionType\": \"mcq-sca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":false}, {\"optionId\":\"o2\",\"isCorrect\":false,\"userSelected\":false} ] }\n  ]\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/v2/user/assessment/submit",
-              "host": ["{{baseUrl}}"],
-              "path": ["v2", "user", "assessment", "submit"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "user",
+                "assessment",
+                "submit"
+              ]
             },
             "description": "1 correct + 1 incorrect + 1 blank -> result 33.33. Writes user_quiz_master + user_quiz_summary."
           }
@@ -827,19 +1179,39 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "userId", "value": "{{targetUser}}" },
-              { "key": "rootOrg", "value": "org1" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "userId",
+                "value": "{{targetUser}}"
+              },
+              {
+                "key": "rootOrg",
+                "value": "org1"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"timeLimit\": 600,\n  \"isAssessment\": true,\n  \"identifier\": \"do_1139209447509688321472\",\n  \"title\": \"Test Assessment\",\n  \"questions\": [\n    { \"questionId\": \"q1\", \"questionType\": \"mcq-sca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":true}, {\"optionId\":\"o2\",\"isCorrect\":false,\"userSelected\":false} ] },\n    { \"questionId\": \"q2\", \"questionType\": \"mcq-mca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":true}, {\"optionId\":\"o2\",\"isCorrect\":true,\"userSelected\":true} ] }\n  ]\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/v2/user/assessment/submit",
-              "host": ["{{baseUrl}}"],
-              "path": ["v2", "user", "assessment", "submit"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "user",
+                "assessment",
+                "submit"
+              ]
             },
             "description": "Writes user_assessment_master. The user_assessment_summary row is only written when the identifier's parent resolves to a Course (parentContentType == 'course')."
           }
@@ -860,19 +1232,39 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "userId", "value": "invalid-user" },
-              { "key": "rootOrg", "value": "org1" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "userId",
+                "value": "invalid-user"
+              },
+              {
+                "key": "rootOrg",
+                "value": "org1"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"timeLimit\": 600,\n  \"isAssessment\": false,\n  \"identifier\": \"do_1139209447509688321472\",\n  \"title\": \"Test Quiz\",\n  \"questions\": [ { \"questionId\": \"q1\", \"questionType\": \"mcq-sca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":true} ] } ]\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/v2/user/assessment/submit",
-              "host": ["{{baseUrl}}"],
-              "path": ["v2", "user", "assessment", "submit"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "user",
+                "assessment",
+                "submit"
+              ]
             },
             "description": "userId 'invalid-user' -> the mock user-search returns count 0 -> 'Invalid UserId.' 400. (Against a real user service, use any non-existent userId.)"
           }
@@ -893,21 +1285,370 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "userId", "value": "{{targetUser}}" },
-              { "key": "rootOrg", "value": "org1" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "userId",
+                "value": "{{targetUser}}"
+              },
+              {
+                "key": "rootOrg",
+                "value": "org1"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"timeLimit\": 600,\n  \"isAssessment\": false,\n  \"title\": \"Test Quiz\",\n  \"questions\": [ { \"questionId\": \"q1\", \"questionType\": \"mcq-sca\", \"options\": [ {\"optionId\":\"o1\",\"isCorrect\":true,\"userSelected\":true} ] } ]\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/v2/user/assessment/submit",
-              "host": ["{{baseUrl}}"],
-              "path": ["v2", "user", "assessment", "submit"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "user",
+                "assessment",
+                "submit"
+              ]
             },
             "description": "Body missing the required 'identifier' -> bean validation 400."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cohorts",
+      "description": "Cohort endpoints (path-variable variants): active-users, auto-enrollment. Run scripts/mock-content-service.py on :8080. Fixtures: course-1 (open batch + 2 participants), course-emptybatch (batch, 0 users), course-nobatch (no batches), course-createfail (create returns no id); user 'enrolled-user' is already in batch-1.",
+      "item": [
+        {
+          "name": "CO2. Active users - happy path (course-1) -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('message Successful', () => pm.expect(b.result.message).to.eql('Successful'));",
+                  "pm.test('has participants', () => pm.expect(b.result.response.length).to.be.above(0));",
+                  "pm.test('user shape', () => pm.expect(b.result.response[0]).to.have.property('user_id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer test-token"
+              },
+              {
+                "key": "rootOrg",
+                "value": "org1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v2/resources/course-1/user/{{actingUser}}/cohorts/activeusers?count=50&filter=false",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "resources",
+                "course-1",
+                "user",
+                "{{actingUser}}",
+                "cohorts",
+                "activeusers"
+              ],
+              "query": [
+                {
+                  "key": "count",
+                  "value": "50"
+                },
+                {
+                  "key": "filter",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "course-1 -> batch-1 -> participants [user-1,user-2], enriched via user-search. Expect 2 users."
+          }
+        },
+        {
+          "name": "CO3. Active users - no batches (course-nobatch) -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('no-batches message', () => pm.expect(pm.response.json().params.errmsg).to.eql('No active batches found for this resource'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer test-token"
+              },
+              {
+                "key": "rootOrg",
+                "value": "org1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v2/resources/course-nobatch/user/{{actingUser}}/cohorts/activeusers?count=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "resources",
+                "course-nobatch",
+                "user",
+                "{{actingUser}}",
+                "cohorts",
+                "activeusers"
+              ],
+              "query": [
+                {
+                  "key": "count",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "course-nobatch has no live batches -> 404 (source would NPE here)."
+          }
+        },
+        {
+          "name": "CO4. Active users - no participants (course-emptybatch) -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('no-users message', () => pm.expect(pm.response.json().params.errmsg).to.eql('No active users found for this resource'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer test-token"
+              },
+              {
+                "key": "rootOrg",
+                "value": "org1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v2/resources/course-emptybatch/user/{{actingUser}}/cohorts/activeusers?count=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "resources",
+                "course-emptybatch",
+                "user",
+                "{{actingUser}}",
+                "cohorts",
+                "activeusers"
+              ],
+              "query": [
+                {
+                  "key": "count",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "course-emptybatch -> batch-empty -> 0 participants -> 404 'No active users found'."
+          }
+        },
+        {
+          "name": "CO5. Auto-enroll - new user into open batch (course-1) -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('enrolled message', () => pm.expect(b.result.message).to.eql('User enrolled successfully'));",
+                  "pm.test('echoes one batch', () => pm.expect(b.result.response.count).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer test-token"
+              },
+              {
+                "key": "rootOrg",
+                "value": "org1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/autoenrollment/newuser/course-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "autoenrollment",
+                "newuser",
+                "course-1"
+              ]
+            },
+            "description": "newuser not enrolled -> enrol into the open batch batch-1. message 'User enrolled successfully'."
+          }
+        },
+        {
+          "name": "CO6. Auto-enroll - already enrolled (enrolled-user, course-1) -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('already-enrolled message', () => pm.expect(pm.response.json().result.message).to.eql('User is already enrolled in this course'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer test-token"
+              },
+              {
+                "key": "rootOrg",
+                "value": "org1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/autoenrollment/enrolled-user/course-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "autoenrollment",
+                "enrolled-user",
+                "course-1"
+              ]
+            },
+            "description": "enrolled-user already in batch-1 -> message 'User is already enrolled in this course'."
+          }
+        },
+        {
+          "name": "CO7. Auto-enroll - no batches, create+enrol (course-nobatch) -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('created+enrolled message', () => pm.expect(pm.response.json().result.message).to.eql('Batch created and user enrolled successfully'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer test-token"
+              },
+              {
+                "key": "rootOrg",
+                "value": "org1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/autoenrollment/newuser/course-nobatch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "autoenrollment",
+                "newuser",
+                "course-nobatch"
+              ]
+            },
+            "description": "course-nobatch has no batches -> create an Open Batch then enrol. message 'Batch created and user enrolled successfully'."
+          }
+        },
+        {
+          "name": "CO8. Auto-enroll - batch create fails (course-createfail) -> 502",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 502', () => pm.response.to.have.status(502));",
+                  "pm.test('create-failed message', () => pm.expect(pm.response.json().params.errmsg).to.eql('Failed to create a batch for the course'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer test-token"
+              },
+              {
+                "key": "rootOrg",
+                "value": "org1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/autoenrollment/newuser/course-createfail",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "autoenrollment",
+                "newuser",
+                "course-createfail"
+              ]
+            },
+            "description": "course-createfail: batch-create returns no id -> 502 Bad Gateway."
           }
         }
       ]

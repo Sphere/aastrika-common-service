@@ -16,7 +16,7 @@ public class ServerConfig {
     @Value("${lms.user.read.path}")
     private String lmsUserReadPath;
 
-    @Value("${sb.service.url}")
+    @Value("${sb.lern.service.url}")
     private String sbUrl;
     @Value("${es.host.list}")
     private String esHostList;
@@ -30,7 +30,7 @@ public class ServerConfig {
     @Value("${es.profile.index.type}")
     private String esProfileIndexType;
 
-    @Value("${sb.service.assign.role.path}")
+    @Value("${sb.lern.service.assign.role.path}")
     private String sbAssignRolePath;
 
     @Value("${es.user.auto.complete.search.fields}")
@@ -39,22 +39,22 @@ public class ServerConfig {
     @Value("${es.user.auto.complete.include.fields}")
     private String esAutoCompleteIncludeFields;
 
-    @Value("${sb.service.user.migrate.path}")
+    @Value("${sb.lern.service.user.migrate.path}")
     private String lmsUserMigratePath;
 
-    @Value("${sb.data.sync.path}")
+    @Value("${sb.lern.data.sync.path}")
     private String lmsDataSyncPath;
 
-    @Value("${sb.es.host.list}")
+    @Value("${sb.lern.es.host.list}")
     private String sbEsHostList;
 
-    @Value("${sb.es.username}")
+    @Value("${sb.lern.es.username}")
     private String sbEsUser;
 
-    @Value("${sb.es.password}")
+    @Value("${sb.lern.es.password}")
     private String sbEsPassword;
 
-    @Value("${sb.es.user.profile.index}")
+    @Value("${sb.lern.es.user.profile.index}")
     private String sbEsUserProfileIndex;
 
     @Value("${user.bulk.upload.container.name}")

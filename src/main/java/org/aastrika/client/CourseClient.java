@@ -1,5 +1,6 @@
 package org.aastrika.client;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -18,12 +19,12 @@ import org.springframework.web.client.RestTemplate;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * HTTP client for the course (LMS) service used by the cohort endpoints: reads batch participants and
- * a user's enrolled batches, and — for auto-enrollment — creates an open batch and enrols the user.
- * Faithful port of the source {@code ContentServiceImpl.getParticipantsList} /
- * {@code getUserCourseListResponse} and {@code CohortsServiceImpl.createBatchAndEnroll} /
- * {@code enrollInCourse}: same endpoints, headers ({@code x-authenticated-user-token} + the service
- * api key) and request bodies. These stay external calls by design.
+ * HTTP client for the course (LMS) service. Used by the cohort endpoints (batch participants, a
+ * user's enrolled batches, and — for auto-enrollment — creating an open batch and enrolling the user)
+ * and by the mandatory-content status check (a user's course progress). Faithful port of the source
+ * {@code ContentServiceImpl}/{@code CohortsServiceImpl}/{@code MandatoryContentServiceImpl} course
+ * calls: same endpoints, headers ({@code x-authenticated-user-token} + the service api key) and
+ * request bodies. These stay external calls by design.
  */
 @Component
 @Slf4j
@@ -35,6 +36,7 @@ public class CourseClient {
     private final String userCoursesList;
     private final String batchCreateEndpoint;
     private final String enrollEndpoint;
+    private final String progressEndpoint;
     private final String apiKey;
 
     public CourseClient(
@@ -44,6 +46,7 @@ public class CourseClient {
             @Value("${cohorts.course.user-courses-list:v1/user/courses/list/{userUUID}}") String userCoursesList,
             @Value("${cohorts.course.batch-create-endpoint:v1/course/batch/create}") String batchCreateEndpoint,
             @Value("${cohorts.course.enroll-endpoint:v1/course/enroll}") String enrollEndpoint,
+            @Value("${cohorts.course.progress-endpoint:v1/content/state/read}") String progressEndpoint,
             @Value("${sb.api-key:apiKey}") String apiKey) {
         this.restTemplate = contentRestTemplate;
         this.serviceHost = serviceHost;
@@ -51,6 +54,7 @@ public class CourseClient {
         this.userCoursesList = userCoursesList;
         this.batchCreateEndpoint = batchCreateEndpoint;
         this.enrollEndpoint = enrollEndpoint;
+        this.progressEndpoint = progressEndpoint;
         this.apiKey = apiKey;
     }
 
@@ -166,6 +170,41 @@ public class CourseClient {
         } catch (RestClientException e) {
             log.error("enroll failed for course {} batch {}: {}", contentId, batchId, e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * A user's completion percentage for a course/batch, via the progress read
+     * ({@code result.contentList[0].completionPercentage}). Faithful port of the source
+     * {@code MandatoryContentServiceImpl.enrichProgressDetails} call. Returns {@code null} on a
+     * non-OK response, an empty content list, or a transport/parse error.
+     */
+    @SuppressWarnings("unchecked")
+    public Float getCourseProgress(String authUserToken, String userId, String courseId, String batchId) {
+        Map<String, Object> reqObj = new LinkedHashMap<>();
+        reqObj.put("userId", userId);
+        reqObj.put("courseId", courseId);
+        reqObj.put("batchId", batchId);
+        reqObj.put("fields", List.of("progressdetails"));
+        Map<String, Object> requestBody = Map.of("request", reqObj);
+        try {
+            Map<String, Object> resp = restTemplate.postForObject(
+                    serviceHost + progressEndpoint, new HttpEntity<>(requestBody, authHeaders(authUserToken)),
+                    Map.class);
+            if (resp == null || !"OK".equalsIgnoreCase(String.valueOf(resp.get("responseCode")))) {
+                return null;
+            }
+            Map<String, Object> result = (Map<String, Object>) resp.get("result");
+            List<Map<String, Object>> contentList = result == null ? null
+                    : (List<Map<String, Object>>) result.get("contentList");
+            if (contentList == null || contentList.isEmpty()) {
+                return null;
+            }
+            Object pct = contentList.get(0).get("completionPercentage");
+            return pct == null ? null : new BigDecimal(pct.toString()).floatValue();
+        } catch (RestClientException | NumberFormatException e) {
+            log.warn("getCourseProgress failed for user {} course {}: {}", userId, courseId, e.getMessage());
+            return null;
         }
     }
 

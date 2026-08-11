@@ -1106,7 +1106,7 @@
     },
     {
       "name": "Assessment",
-      "description": "POST /v2/user/assessment/submit — the only consumed assessment endpoint. Scoring is in-memory (the answer key rides in the request: each option carries isCorrect + the user's userSelected/response). Returns the raw score summary with HTTP 201 (NOT the AppResponse envelope — preserved for the live client contract).\n\nExternal calls: user validation (user-search) and content hierarchy (getParent/getContentType). For local testing point user.search-url at the mock (scripts/mock-content-service.py) and content.hierarchy-url at the real content service.",
+      "description": "POST /v2/user/assessment/submit \u2014 the only consumed assessment endpoint. Scoring is in-memory (the answer key rides in the request: each option carries isCorrect + the user's userSelected/response). Returns the raw score summary with HTTP 201 (NOT the AppResponse envelope \u2014 preserved for the live client contract).\n\nExternal calls: user validation (user-search) and content hierarchy (getParent/getContentType). For local testing point user.search-url at the mock (scripts/mock-content-service.py) and content.hierarchy-url at the real content service.",
       "item": [
         {
           "name": "A1. Submit quiz (isAssessment=false)  -> 201, result 33.33",
@@ -1649,6 +1649,64 @@
               ]
             },
             "description": "course-createfail: batch-create returns no id -> 502 Bad Gateway."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mandatory Content",
+      "description": "Mandatory-content status check migrated from sunbird-cb-ext. Requires a live Cassandra (sunbird.mandatory_user_content) and course service; not mock-backed.",
+      "item": [
+        {
+          "name": "MC1. Mandatory content status (GET /v1/check/mandatoryContentStatus)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('uniform envelope', () => { pm.expect(b).to.have.property('result'); pm.expect(b.result).to.have.property('message'); pm.expect(b.result).to.have.property('response'); });",
+                  "pm.test('response has completion flag', () => pm.expect(b.result.response).to.have.property('mandatoryCourseCompleted'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "xAuthUser",
+                "value": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJkelFFNjdiRmxRN0V2eUF3Tktndmk1X2ZQR0dsVUVKOGEyMnFlZ1R0TFU0In0.eyJqdGkiOiI5NTU4ODllMC0xNTk5LTQ3NGEtOTYwOC00NmNkZDUxNzJhNTMiLCJleHAiOjE3NTkzMTQ1NDQsIm5iZiI6MCwiaWF0IjoxNzU2NzIyNTQ0LCJpc3MiOiJodHRwczovL2Fhc3RyaWthLXN0YWdlLnRhcmVudG8uY29tL2F1dGgvcmVhbG1zL3N1bmJpcmQiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiZjo5MDdiNWM2NC0xZDc5LTQ0ZGItYjNiNS1lYzEyOWQ1N2Y0MjE6MGViN2UwYWEtNDgxYS00ZjAwLWE4YmUtZjUxNzMyMDI1MDdjIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoicG9ydGFsIiwiYXV0aF90aW1lIjowLCJzZXNzaW9uX3N0YXRlIjoiMzVjZGQyNzctODhlMy00YzA5LWJkMGMtOWRmYmQzOGM4YTNmIiwiYWNyIjoiMSJ9.signature-truncated-replace-with-a-fresh-token",
+                "description": "Course-service token (source header name). Replace with a fresh token when expired."
+              },
+              {
+                "key": "rootOrg",
+                "value": "aastar"
+              },
+              {
+                "key": "org",
+                "value": "aastar"
+              },
+              {
+                "key": "wid",
+                "value": "eaa03519-a19c-4703-bf76-d1dea9be3383",
+                "description": "The user id (source header name)."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/check/mandatoryContentStatus",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "check",
+                "mandatoryContentStatus"
+              ]
+            },
+            "description": "Whether the user has completed every mandatory course for their org. Reads sunbird.mandatory_user_content (needs rows for root_org/org) and calls the course-service progress read per course \u2014 point COURSE_SERVICE_HOST at your real course service. Uniform envelope: result.response = {mandatoryCourseCompleted, contentDetails}. Header 'xAuthUser' token expires \u2014 paste a fresh one."
           }
         }
       ]

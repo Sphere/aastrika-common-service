@@ -93,18 +93,15 @@ public class Constants {
     public static final String RECIPIENT_EMAILS = "recipientEmails";
     public static final String SET_PASSWORD_LINK = "setPasswordLink";
     public static final String SUBJECT = "subject";
-    public static final String API_FILE_UPLOAD = "";
-    public static final String API_FILE_DELETE = "";
-    public static final String API_FILE_DOWNLOAD = "";
-    public static final String LOCAL_BASE_PATH = "";
+    public static final String API_FILE_UPLOAD = "api.file.upload";
+    public static final String API_FILE_DELETE = "api.file.delete";
+    public static final String API_FILE_DOWNLOAD = "api.file.download";
+    public static final String LOCAL_BASE_PATH = "/tmp/";
 
 
     public static final String FAILED = "Failed";
     public static final String SUCCESSFUL = "Successful";
-    public static final String MESSAGE = "message";
-    public static final String DATA = "data";
     public static final String STATUS = "status";
-    public static final String RESULT = "result";
     public static final String CONTENT = "content";
     public static final String COUNT = "count";
 
@@ -118,7 +115,18 @@ public class Constants {
     public static final String APPLICATION_JSON = "application/json";
 
     public static final String PROFILE_DETAILS_LOWER = "profiledetails";
-    public static final String PROFILE_DETAILS = "profileDetails";
     public static final String PROFESSIONAL_DETAILS = "professionalDetails";
     public static final String EMPLOYMENT_DETAILS = "employmentDetails";
+    public static final String AUTHORIZATION = "authorization";
+    public static final String STATUS_IN_PROGRESS_UPPERCASE = "IN-PROGRESS";
+    public static final String TOTAL_RECORDS = "totalRecords";
+    public static final String SUCCESSFUL_RECORDS_COUNT = "successfulRecordsCount";
+    public static final String FAILED_RECORDS_COUNT = "failedRecordsCount";
+    public static final String DATE_UPDATE_ON = "dateUpdatedOn";
+    public static final String USER_CREATION_FAILED = "User Creation Failed";
+    public static final String FAILED_UPPERCASE = "FAILED";
+    public static final String SUCCESSFUL_UPPERCASE = "SUCCESSFUL";
+    public static final String EMAIL_EXIST_ERROR = "Email id already registered";
+    public static final String PHONE = "phone";
+    public static final String MOBILE_NUMBER_EXIST_ERROR = "Mobile number is already registered.";
 }

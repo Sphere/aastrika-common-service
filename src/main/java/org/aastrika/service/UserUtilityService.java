@@ -1,13 +1,19 @@
 package org.aastrika.service;
 
 
+import org.aastrika.dto.UserRegistration;
+
 import java.util.List;
 import java.util.Map;
 
 public interface UserUtilityService {
 
-    public boolean assignRole(String sbOrgId, String userId, String objectDetails);
+    boolean assignRole(String sbOrgId, String userId, String objectDetails);
 
-    Map<String, Object> getUsersDataFromUserIds(List<String> userIds, List<String> fields, String authToken);
+    boolean isUserExist(String key, String value) throws Exception;
+
+    Boolean isDomainAccepted(String email);
+
+    boolean createUser(UserRegistration userRegistration);
 
 }

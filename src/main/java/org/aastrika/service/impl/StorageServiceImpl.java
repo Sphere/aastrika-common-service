@@ -114,9 +114,14 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public SBApiResponse downloadFile(String fileName) {
+        log.info("About to call createDefaultResponse");
         SBApiResponse response = ProjectUtil.createDefaultResponse(Constants.API_FILE_DOWNLOAD);
+        log.info("createDefaultResponse returned: " + response);
         try {
+
             String objectKey = serverProperties.getBulkUploadContainerName() + "/" + fileName;
+            log.info("Attempting download - container: {}, key: {}",
+                    serverProperties.getCloudContainerName(), objectKey);
             storageService.download(serverProperties.getCloudContainerName(), objectKey, Constants.LOCAL_BASE_PATH,
                     Option.apply(Boolean.FALSE));
             return response;

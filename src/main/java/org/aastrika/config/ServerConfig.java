@@ -112,6 +112,12 @@ public class ServerConfig {
     @Value("${km.base.content.search}")
     private String kmBaseContentSearch;
 
+    @Value("${sunbird.user.search.endpoint}")
+    private String userSearchEndPoint;
+
+    @Value("${user.registration.domain}")
+    private String userRegistrationDomain;
+
     public String[] getEsHostList() {
         return esHostList.split(",", -1);
     }
@@ -139,4 +145,7 @@ public class ServerConfig {
         return Arrays.asList(bulkUploadStatusFields.split(",", -1));
     }
 
+    public List<String> getUserRegistrationDomain() {
+        return Arrays.asList(userRegistrationDomain.split(",", -1));
+    }
 }

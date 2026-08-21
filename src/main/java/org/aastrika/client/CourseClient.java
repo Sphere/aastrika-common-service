@@ -46,7 +46,7 @@ public class CourseClient {
             @Value("${cohorts.course.user-courses-list:v1/user/courses/list/{userUUID}}") String userCoursesList,
             @Value("${cohorts.course.batch-create-endpoint:v1/course/batch/create}") String batchCreateEndpoint,
             @Value("${cohorts.course.enroll-endpoint:v1/course/enroll}") String enrollEndpoint,
-            @Value("${cohorts.course.progress-endpoint:v1/content/state/read}") String progressEndpoint,
+            @Value("${learn-service.course.progress-endpoint:http://localhost:9000/private/v1/content/state/read}") String progressEndpoint,
             @Value("${sb.api-key:apiKey}") String apiKey) {
         this.restTemplate = contentRestTemplate;
         this.serviceHost = serviceHost;
@@ -188,8 +188,10 @@ public class CourseClient {
         reqObj.put("fields", List.of("progressdetails"));
         Map<String, Object> requestBody = Map.of("request", reqObj);
         try {
+            // progressEndpoint is a FULL absolute URL (unlike the other course paths) — used as-is,
+            // NOT prefixed with serviceHost.
             Map<String, Object> resp = restTemplate.postForObject(
-                    serviceHost + progressEndpoint, new HttpEntity<>(requestBody, authHeaders(authUserToken)),
+                    progressEndpoint, new HttpEntity<>(requestBody, authHeaders(authUserToken)),
                     Map.class);
             if (resp == null || !"OK".equalsIgnoreCase(String.valueOf(resp.get("responseCode")))) {
                 return null;

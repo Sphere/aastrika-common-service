@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.slf4j.Slf4j;
 import org.aastrika.common.Constants;
 import org.apache.commons.collections4.MapUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -23,10 +24,11 @@ import java.util.Map;
 @Service
 public class OutboundRequestHandlerServiceImpl {
 
-    private RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
-    public OutboundRequestHandlerServiceImpl() {
-        this.restTemplate = new RestTemplate();
+    public OutboundRequestHandlerServiceImpl(
+            @Qualifier("contentRestTemplate") RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
     public Map<String, Object> fetchResultUsingPatch(String uri, Object request, Map<String, String> headersValues) {

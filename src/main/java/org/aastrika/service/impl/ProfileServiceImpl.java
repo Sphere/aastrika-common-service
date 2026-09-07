@@ -113,7 +113,6 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
 
-
     @Override
     public SBApiResponse migrateUser(Map<String, Object> request, String userToken, String authToken) {
         SBApiResponse response = new SBApiResponse(Constants.ORG_PROFILE_UPDATE);

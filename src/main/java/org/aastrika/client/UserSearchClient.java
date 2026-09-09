@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.aastrika.common.Constants;
 import org.aastrika.dto.response.UserSearchContent;
 import org.aastrika.exception.ApiException;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,7 +45,7 @@ public class UserSearchClient {
     /** {@code rootOrg} is kept for signature parity with the source; only {@code userId} is filtered. */
     @SuppressWarnings("unchecked")
     public boolean validateUser(String rootOrg, String userId) {
-        Map<String, Object> body = Map.of("request", Map.of("filters", Map.of("userId", userId)));
+        Map<String, Object> body = Map.of(Constants.REQUEST, Map.of(Constants.FILTERS, Map.of("userId", userId)));
         try {
             Map<String, Object> resp = restTemplate.postForObject(
                     userSearchUrl, new HttpEntity<>(body, jsonHeaders()), Map.class);
@@ -52,8 +53,8 @@ public class UserSearchClient {
                 return false;
             }
             Map<String, Object> result = (Map<String, Object>) resp.get("result");
-            Map<String, Object> response = result == null ? null : (Map<String, Object>) result.get("response");
-            Object count = response == null ? null : response.get("count");
+            Map<String, Object> response = result == null ? null : (Map<String, Object>) result.get(Constants.RESPONSE);
+            Object count = response == null ? null : response.get(Constants.COUNT);
             return count instanceof Number && ((Number) count).intValue() >= 1;
         } catch (RestClientException e) {
             throw new ApiException(API_ID, HttpStatus.INTERNAL_SERVER_ERROR,
@@ -74,7 +75,7 @@ public class UserSearchClient {
         if (userIds == null || userIds.isEmpty()) {
             return result;
         }
-        Map<String, Object> body = Map.of("request", Map.of("filters", Map.of("userId", userIds)));
+        Map<String, Object> body = Map.of(Constants.REQUEST, Map.of(Constants.FILTERS, Map.of("userId", userIds)));
         try {
             Map<String, Object> resp = restTemplate.postForObject(
                     userSearchUrl, new HttpEntity<>(body, jsonHeaders()), Map.class);
@@ -82,11 +83,11 @@ public class UserSearchClient {
                 return result;
             }
             Map<String, Object> res = (Map<String, Object>) resp.get("result");
-            Map<String, Object> response = res == null ? null : (Map<String, Object>) res.get("response");
-            if (response == null || ((Number) response.getOrDefault("count", 0)).intValue() <= 0) {
+            Map<String, Object> response = res == null ? null : (Map<String, Object>) res.get(Constants.RESPONSE);
+            if (response == null || ((Number) response.getOrDefault(Constants.COUNT, 0)).intValue() <= 0) {
                 return result;
             }
-            List<Map<String, Object>> content = (List<Map<String, Object>>) response.get("content");
+            List<Map<String, Object>> content = (List<Map<String, Object>>) response.get(Constants.CONTENT);
             if (content == null) {
                 return result;
             }

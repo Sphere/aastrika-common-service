@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.aastrika.common.Constants;
 import org.aastrika.dto.request.LeaderboardRequest;
 import org.aastrika.dto.response.AppResponse;
 import org.aastrika.dto.response.LeaderboardResponse;
@@ -56,8 +57,8 @@ public class LeaderboardServiceImpl implements LeaderboardService {
                 .findAllUsersByDynamicFilters(request.getFilters(), null, null).size();
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("count", totalCount);
-        result.put("content", content);
+        result.put(Constants.COUNT, totalCount);
+        result.put(Constants.CONTENT, content);
         return AppResponse.success(API_ID, result, HttpStatus.OK);
     }
 

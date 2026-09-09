@@ -2,6 +2,7 @@ package org.aastrika.controller;
 
 import java.util.Map;
 
+import org.aastrika.common.Constants;
 import org.aastrika.dto.response.AppResponse;
 import org.aastrika.service.CohortsService;
 import org.springframework.http.HttpStatus;
@@ -30,11 +31,11 @@ public class CohortsController {
     /** Active users (participants) across the live batches of a resource. */
     @GetMapping("/v2/resources/{resourceId}/user/{userUUID}/cohorts/activeusers")
     public ResponseEntity<AppResponse<Map<String, Object>>> getActiveUsers(
-            @RequestHeader("Authorization") String authUserToken,
+            @RequestHeader(Constants.AUTH_TOKEN) String authUserToken,
             @PathVariable("resourceId") String contentId,
             @RequestHeader("rootOrg") String rootOrg,
             @PathVariable("userUUID") String userUUID,
-            @RequestParam(value = "count", required = false, defaultValue = "50") Integer count,
+            @RequestParam(value = Constants.COUNT, required = false, defaultValue = "50") Integer count,
             @RequestParam(value = "filter", required = false, defaultValue = "false") Boolean toFilter) {
         if (authUserToken.contains(" ")) {
             authUserToken = authUserToken.split(" ")[1];
@@ -47,7 +48,7 @@ public class CohortsController {
     /** Auto-enrols the user into the course (reusing an open batch, or creating one). */
     @GetMapping("/v1/autoenrollment/{userUUID}/{courseId}")
     public ResponseEntity<AppResponse<Map<String, Object>>> autoEnrollmentInCourse(
-            @RequestHeader("Authorization") String authUserToken,
+            @RequestHeader(Constants.AUTH_TOKEN) String authUserToken,
             @PathVariable("courseId") String contentId,
             @RequestHeader("rootOrg") String rootOrg,
             @PathVariable("userUUID") String userUUID) {

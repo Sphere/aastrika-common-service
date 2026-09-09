@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import org.aastrika.common.Constants;
 import org.aastrika.dto.response.CohortBatch;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -54,7 +55,7 @@ public class ContentClient {
             Map<String, Object> body = restTemplate.getForObject(url, Map.class);
             if (body != null && "OK".equalsIgnoreCase(String.valueOf(body.get("responseCode")))) {
                 Map<String, Object> result = (Map<String, Object>) body.get("result");
-                return result == null ? null : (Map<String, Object>) result.get("content");
+                return result == null ? null : (Map<String, Object>) result.get(Constants.CONTENT);
             }
         } catch (RestClientException e) {
             log.warn("getHierarchyContent failed for {}: {}", contentId, e.getMessage());
@@ -89,9 +90,9 @@ public class ContentClient {
         filters.put("status", List.of("Live"));
         filters.put("identifier", contentId);
         Map<String, Object> req = new LinkedHashMap<>();
-        req.put("filters", filters);
-        req.put("fields", List.of("identifier", "name", "primaryCategory", "batches", "leafNodesCount", "contentType"));
-        Map<String, Object> requestBody = Map.of("request", req);
+        req.put(Constants.FILTERS, filters);
+        req.put(Constants.FIELDS, List.of("identifier", "name", "primaryCategory", "batches", "leafNodesCount", "contentType"));
+        Map<String, Object> requestBody = Map.of(Constants.REQUEST, req);
         try {
             Map<String, Object> body = restTemplate.postForObject(
                     searchUrl, new HttpEntity<>(requestBody, jsonHeaders()), Map.class);
@@ -99,7 +100,7 @@ public class ContentClient {
                 return List.of();
             }
             Map<String, Object> result = (Map<String, Object>) body.get("result");
-            List<Map<String, Object>> content = result == null ? null : (List<Map<String, Object>>) result.get("content");
+            List<Map<String, Object>> content = result == null ? null : (List<Map<String, Object>>) result.get(Constants.CONTENT);
             if (content == null || content.isEmpty()) {
                 return List.of();
             }

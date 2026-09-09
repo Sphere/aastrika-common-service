@@ -50,6 +50,31 @@
       "key": "ratingValue",
       "value": "1",
       "type": "string"
+    },
+    {
+      "key": "autocompleteTerm",
+      "value": "rah",
+      "type": "string"
+    },
+    {
+      "key": "migrateUserId",
+      "value": "REPLACE-WITH-A-DISPOSABLE-USER-UUID",
+      "type": "string"
+    },
+    {
+      "key": "migrateChannel",
+      "value": "REPLACE-WITH-A-TENANT-CHANNEL",
+      "type": "string"
+    },
+    {
+      "key": "bulkOrgId",
+      "value": "REPLACE-WITH-YOUR-ROOT-ORG-ID",
+      "type": "string"
+    },
+    {
+      "key": "bulkJobId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -1707,6 +1732,614 @@
               ]
             },
             "description": "Whether the user has completed every mandatory course for their org. Reads sunbird.mandatory_user_content (needs rows for root_org/org) and calls the course-service progress read per course \u2014 point COURSE_SERVICE_HOST at your real course service. Uniform envelope: result.response = {mandatoryCourseCompleted, contentDetails}. Header 'xAuthUser' token expires \u2014 paste a fresh one."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "description": "ProfileController: OpenSearch user autocomplete, admin org migration, and the user bulk-upload job APIs.\n\nWARNING - PR2 (migrate) is DESTRUCTIVE and NOT atomic. Step 1 calls the learner service and is irreversible once it succeeds, even if the later profiledetails rewrite, PUBLIC-role assignment or data-sync fail. Point migrateUserId at a disposable account only; migrateChannel must be the channel of a TENANT org (sunbird.organisation.istenant = true) or the learner service rejects it.\n\nPR3 needs a file attached by hand - Postman stores only a local path for form-data files, so the collection cannot ship one. Attach an .xlsx whose first row is exactly: firstname | lastname | email | phone. The row cap is bulk-upload.max-rows (default 2000). PR3's test script writes the returned jobId into the bulkJobId collection variable, so run PR3 before PR5 and PR6.\n\nPR1 needs a reachable OpenSearch at sb.lern.es.host.list; PR2-PR6 need PostgreSQL, and PR2 additionally needs Cassandra plus the learner service.",
+      "item": [
+        {
+          "name": "PR1. User autocomplete (GET /user/v1/autocomplete/{searchTerm})",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('uniform envelope', () => pm.expect(b).to.have.property('result'));",
+                  "pm.test('content is an array', () => pm.expect(b.result.response.content).to.be.an('array'));",
+                  "pm.test('count matches content length', () => pm.expect(b.result.response.count).to.eql(b.result.response.content.length));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/autocomplete/{{autocompleteTerm}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "autocomplete",
+                "{{autocompleteTerm}}"
+              ]
+            },
+            "description": "Prefix search over the OpenSearch user index (sb.lern.es.user.profile.index, default user_alias). Matches the fields in es.user.auto.complete.search.fields (firstName.raw, email.raw, lastName.raw) and returns the _source fields listed in es.user.auto.complete.include.fields.\n\nEnvelope: result.response = {content: [...], count: n}. No auth header - the gateway is expected to have authenticated the caller. Any ES failure surfaces as 500 with params.errmsg."
+          }
+        },
+        {
+          "name": "PR2. Migrate user to another org (PATCH /user/v1/migrate)  -- DESTRUCTIVE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('response is SUCCESS', () => pm.expect(b.result.response).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-authenticated-user-token",
+                "value": "REPLACE-WITH-A-FRESH-USER-TOKEN",
+                "description": "Constants.X_AUTH_TOKEN - forwarded verbatim to the learner service."
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer REPLACE-WITH-THE-ADMIN-TOKEN",
+                "description": "Constants.AUTH_TOKEN - forwarded verbatim to the learner service."
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"request\": {\n    \"userId\": \"{{migrateUserId}}\",\n    \"channel\": \"{{migrateChannel}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/migrate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "migrate"
+              ]
+            },
+            "description": "DESTRUCTIVE AND NOT ATOMIC. Five steps in order: (1) learner-service org migration - irreversible once it returns success, (2) read sunbird.user, (3) rewrite profiledetails and write it back with the new channel, (4) assign the PUBLIC role against rootorgid, (5) trigger a data-sync. A failure in steps 2-5 leaves the user already migrated at step 1.\n\nThe source's {\"request\": {...}} envelope is kept deliberately - admin tooling calls this, so the wire contract must stay byte-compatible.\n\nStatus codes diverge from the source's blanket 500: 404 missing user, 422 unusable profileDetails, 502 downstream failure. An invalid channel is reported by the learner service and surfaced verbatim as 502."
+          }
+        },
+        {
+          "name": "PR3. Bulk upload users (POST /user/v1/bulkupload)  -- attach an .xlsx",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('job was created', () => { pm.expect(b.result).to.have.property('jobId'); pm.expect(b.result.status).to.eql('INITIATED'); });",
+                  "pm.test('counts add up', () => pm.expect(b.result.validRecords + b.result.invalidRecords).to.eql(b.result.totalRecords));",
+                  "pm.collectionVariables.set('bulkJobId', b.result.jobId);",
+                  "console.log('bulkJobId set to', b.result.jobId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-authenticated-user-orgid",
+                "value": "{{bulkOrgId}}",
+                "description": "Constants.X_AUTH_USER_ORG_ID - the rootOrgId the job and its rows are filed under."
+              },
+              {
+                "key": "x-authenticated-user-orgname",
+                "value": "REPLACE-WITH-YOUR-ORG-NAME",
+                "description": "Constants.X_AUTH_USER_ORG_NAME"
+              },
+              {
+                "key": "x-authenticated-userid",
+                "value": "{{actingUser}}",
+                "description": "Constants.X_AUTH_USER_ID - recorded as createdBy."
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Attach an .xlsx. The header row must be exactly: firstname | lastname | email | phone. Postman cannot ship the file inside the collection, so select one here before sending."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/bulkupload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "bulkupload"
+              ]
+            },
+            "description": "Parses the sheet in memory, runs the CPU-only validations, persists a job plus one row per line, and returns immediately - user creation happens afterwards off the PENDING rows. The file itself is not retained; the per-row state is the record of the upload.\n\nEnvelope: result = {jobId, fileName, status: INITIATED, totalRecords, validRecords, invalidRecords, invalidRows: [{rowNumber, errors}]}.\n\n400 if the file is empty, unreadable, not a .xlsx, has the wrong header, has no data rows, or exceeds bulk-upload.max-rows (default 2000).\n\nThe test script writes jobId into the bulkJobId collection variable for PR5 and PR6."
+          }
+        },
+        {
+          "name": "PR4. Upload history for an org (GET /user/v1/bulkupload/{orgId})",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('content is an array', () => pm.expect(b.result.content).to.be.an('array'));",
+                  "pm.test('count matches content length', () => pm.expect(b.result.count).to.eql(b.result.content.length));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/bulkupload/{{bulkOrgId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "bulkupload",
+                "{{bulkOrgId}}"
+              ]
+            },
+            "description": "The org's upload history, newest first. Envelope: result = {count, content: [...]}, each entry {jobId, fileName, status, totalRecords, validRecords, invalidRecords, pendingRecords, successfulRecords, failedRecords, createdAt, createdBy, updatedAt} - the per-status counts are derived from the stored rows, not cached on the job."
+          }
+        },
+        {
+          "name": "PR5. Upload detail, FAILED rows only (GET /user/v1/bulkupload/{orgId}/{jobId})",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('is the requested job', () => pm.expect(b.result.jobId).to.eql(pm.collectionVariables.get('bulkJobId')));",
+                  "pm.test('records is an array', () => pm.expect(b.result.records).to.be.an('array'));",
+                  "pm.test('filter honoured', () => b.result.records.forEach(r => pm.expect(r.status).to.eql('FAILED')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/bulkupload/{{bulkOrgId}}/{{bulkJobId}}?status=FAILED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "bulkupload",
+                "{{bulkOrgId}}",
+                "{{bulkJobId}}"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "FAILED",
+                  "description": "Optional. PENDING | INVALID | SUCCESS | FAILED, case-insensitive. Drop it to see every row."
+                }
+              ]
+            },
+            "description": "One job with its rows. This replaces the source's re-uploaded annotated spreadsheet - filter by status instead of downloading a marked-up sheet.\n\nEnvelope: the job summary fields plus result.records = [{rowNumber, firstName, lastName, email, phone, status, errors, updatedAt}].\n\nNeeds bulkJobId, which PR3 sets. 404 if the job does not belong to that org."
+          }
+        },
+        {
+          "name": "PR6. Retry failed rows (POST /user/v1/bulkupload/{orgId}/{jobId}/retry)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('job re-queued', () => { pm.expect(b.result.jobId).to.eql(pm.collectionVariables.get('bulkJobId')); pm.expect(b.result.status).to.eql('INITIATED'); });",
+                  "pm.test('reports how many rows were re-queued', () => pm.expect(b.result.requeuedRecords).to.be.a('number'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-authenticated-userid",
+                "value": "{{actingUser}}",
+                "description": "Constants.X_AUTH_USER_ID"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/bulkupload/{{bulkOrgId}}/{{bulkJobId}}/retry",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "bulkupload",
+                "{{bulkOrgId}}",
+                "{{bulkJobId}}",
+                "retry"
+              ]
+            },
+            "description": "Returns the job's FAILED rows to PENDING and re-queues it. INVALID rows are deliberately left alone - their data is wrong, so they need a corrected sheet rather than a retry.\n\nEnvelope: result = {jobId, status: INITIATED, requeuedRecords}. requeuedRecords is 0 when nothing had failed. 404 if the job does not belong to that org."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile - Errors",
+      "description": "Negative cases for the Profile endpoints. All three are safe to run - none of them reaches the irreversible learner-service migration call.",
+      "item": [
+        {
+          "name": "PR7. Migrate with blank channel -> 400 (bean validation)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('rejected before any downstream call', () => pm.expect(pm.response.text()).to.not.include('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-authenticated-user-token",
+                "value": "any-value-validation-fails-first"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer any-value-validation-fails-first"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"request\": {\n    \"userId\": \"{{migrateUserId}}\",\n    \"channel\": \"\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/migrate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "migrate"
+              ]
+            },
+            "description": "channel is @NotBlank on the nested payload, so @Valid rejects this at the controller boundary - the learner service is never called, which is why this one is safe to run. The source validated the envelope by hand and returned 500; bean validation turns that into a proper 400."
+          }
+        },
+        {
+          "name": "PR8. Bulk upload a non-xlsx file -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('error envelope explains why', () => pm.expect(pm.response.json().params.errmsg).to.include('.xlsx'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-authenticated-user-orgid",
+                "value": "{{bulkOrgId}}"
+              },
+              {
+                "key": "x-authenticated-user-orgname",
+                "value": "REPLACE-WITH-YOUR-ORG-NAME"
+              },
+              {
+                "key": "x-authenticated-userid",
+                "value": "{{actingUser}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Attach any non-.xlsx file (a .csv, a .txt, an old .xls). Expect: 'The file could not be read as a .xlsx workbook'."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/bulkupload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "bulkupload"
+              ]
+            },
+            "description": "A .csv, .xls or arbitrary bytes all fail the same way - the parser opens the upload as an XSSFWorkbook and a failure there is reported as 400 rather than leaking the POI exception. Sending no file at all yields 'The uploaded file is empty'."
+          }
+        },
+        {
+          "name": "PR9. Upload detail for an unknown jobId -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('error envelope', () => pm.expect(pm.response.json().params).to.have.property('errmsg'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/v1/bulkupload/{{bulkOrgId}}/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "v1",
+                "bulkupload",
+                "{{bulkOrgId}}",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            },
+            "description": "The lookup is scoped by org, so this is also what a caller sees when the job exists but belongs to a different org - a deliberate 404 rather than a 403, so job ids are not enumerable across orgs. A jobId that is not a UUID gives 400 instead, from the PathVariable conversion."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public Search",
+      "item": [
+        {
+          "name": "P1. Course search \u2014 free text (POST /publicSearch/getcourse)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"raw results payload\", () => {",
+                  "  const r = pm.response.json().results;",
+                  "  pm.expect(r).to.have.property('content').that.is.an('array');",
+                  "  pm.expect(r).to.have.property('totalCount').that.is.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"search_text\": \"Sr\",\n  \"search_fieldnames\": [\n    \"audience\",\n    \"competencies_v1\",\n    \"creator\",\n    \"description\",\n    \"keywords\",\n    \"sourceName\",\n    \"subTitle\",\n    \"name\"\n  ],\n  \"course_status\": \"Live\",\n  \"resourceType\": \"Course\",\n  \"contentType\": \"Course\",\n  \"language\": \"\",\n  \"offset\": 0,\n  \"limit\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/publicSearch/getcourse",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "publicSearch",
+                "getcourse"
+              ]
+            },
+            "description": "Drop-in replacement for the recommendation service's /publicSearch/getcourse. Unauthenticated: no X-Auth-User-Id. Response is the RAW payload {\"results\":{\"content\":[...],\"totalCount\":n}} \u2014 deliberately NOT the AppResponse envelope, so existing callers switch host only. `resourceType`, `sorting_fieldname` and `primaryCategory` are accepted and ignored; results are always sorted by lastUpdatedOn desc."
+          }
+        },
+        {
+          "name": "P2. Course search \u2014 filters only (blank search_text)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"search_text\": \"\",\n  \"search_fieldnames\": [\n    \"audience\",\n    \"competencies_v1\",\n    \"creator\",\n    \"description\",\n    \"keywords\",\n    \"sourceName\",\n    \"subTitle\",\n    \"name\"\n  ],\n  \"course_status\": \"Live\",\n  \"resourceType\": \"Course\",\n  \"contentType\": \"Course\",\n  \"language\": \"\",\n  \"offset\": 0,\n  \"limit\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/publicSearch/getcourse",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "publicSearch",
+                "getcourse"
+              ]
+            },
+            "description": "Blank search_text drops the multi_match and returns every Live course of the given contentType, newest first. limit defaults to 25 when omitted or <= 0."
+          }
+        },
+        {
+          "name": "P3. Course search \u2014 language filter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"search_text\": \"Sr\",\n  \"search_fieldnames\": [\n    \"audience\",\n    \"competencies_v1\",\n    \"creator\",\n    \"description\",\n    \"keywords\",\n    \"sourceName\",\n    \"subTitle\",\n    \"name\"\n  ],\n  \"course_status\": \"Live\",\n  \"resourceType\": \"Course\",\n  \"contentType\": \"Course\",\n  \"language\": \"en\",\n  \"offset\": 0,\n  \"limit\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/publicSearch/getcourse",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "publicSearch",
+                "getcourse"
+              ]
+            },
+            "description": "A non-blank language adds a match on the index's `lang` field on top of the text/filter clauses."
+          }
+        },
+        {
+          "name": "P4. Course search \u2014 missing course_status (expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"error envelope\", () => pm.expect(pm.response.json().params.errmsg).to.include('courseStatus'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"search_text\": \"Sr\",\n  \"search_fieldnames\": [\n    \"audience\",\n    \"competencies_v1\",\n    \"creator\",\n    \"description\",\n    \"keywords\",\n    \"sourceName\",\n    \"subTitle\",\n    \"name\"\n  ],\n  \"resourceType\": \"Course\",\n  \"contentType\": \"Course\",\n  \"language\": \"\",\n  \"offset\": 0,\n  \"limit\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/publicSearch/getcourse",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "publicSearch",
+                "getcourse"
+              ]
+            },
+            "description": "course_status and contentType are @NotBlank. Unlike the success path, validation/upstream errors DO use the AppResponse error envelope (params.errmsg)."
           }
         }
       ]

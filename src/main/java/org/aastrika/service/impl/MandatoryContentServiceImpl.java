@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.aastrika.client.CourseClient;
+import org.aastrika.common.Constants;
 import org.aastrika.dto.response.AppResponse;
 import org.aastrika.dto.response.MandatoryContentInfo;
 import org.aastrika.dto.response.MandatoryContentResponse;
@@ -95,7 +96,7 @@ public class MandatoryContentServiceImpl implements MandatoryContentService {
     private AppResponse<Map<String, Object>> envelope(String message, MandatoryContentResponse response) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("message", message);
-        result.put("response", response);
+        result.put(Constants.RESPONSE, response);
         return AppResponse.success(API_ID, result, HttpStatus.OK);
     }
 }

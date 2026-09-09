@@ -1,5 +1,6 @@
 package org.aastrika.client;
 
+import org.aastrika.common.Constants;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -75,14 +76,14 @@ public class CourseClient {
                 Map<String, Object> batch = new LinkedHashMap<>();
                 batch.put("active", true);
                 batch.put("batchId", batchId);
-                Map<String, Object> requestBody = Map.of("request", Map.of("batch", batch));
+                Map<String, Object> requestBody = Map.of(Constants.REQUEST, Map.of("batch", batch));
 
                 Map<String, Object> resp = restTemplate.postForObject(
                         url, new HttpEntity<>(requestBody, headers), Map.class);
                 if (resp != null && "OK".equalsIgnoreCase(String.valueOf(resp.get("responseCode")))) {
                     Map<String, Object> result = (Map<String, Object>) resp.get("result");
                     Map<String, Object> batchResp = result == null ? null : (Map<String, Object>) result.get("batch");
-                    if (batchResp != null && ((Number) batchResp.getOrDefault("count", 0)).intValue() > 0) {
+                    if (batchResp != null && ((Number) batchResp.getOrDefault(Constants.COUNT, 0)).intValue() > 0) {
                         List<String> participants = (List<String>) batchResp.get("participants");
                         if (participants != null) {
                             participantList.addAll(participants);
@@ -141,7 +142,7 @@ public class CourseClient {
         batchObj.put("enrollmentType", "open");
         batchObj.put("startDate", date);
         batchObj.put("createdBy", userUUID);
-        Map<String, Object> requestBody = Map.of("request", batchObj);
+        Map<String, Object> requestBody = Map.of(Constants.REQUEST, batchObj);
 
         try {
             Map<String, Object> resp = restTemplate.postForObject(
@@ -161,7 +162,7 @@ public class CourseClient {
         enrollObj.put("userId", userUUID);
         enrollObj.put("courseId", contentId);
         enrollObj.put("batchId", batchId);
-        Map<String, Object> requestBody = Map.of("request", enrollObj);
+        Map<String, Object> requestBody = Map.of(Constants.REQUEST, enrollObj);
 
         try {
             restTemplate.postForObject(
@@ -185,8 +186,8 @@ public class CourseClient {
         reqObj.put("userId", userId);
         reqObj.put("courseId", courseId);
         reqObj.put("batchId", batchId);
-        reqObj.put("fields", List.of("progressdetails"));
-        Map<String, Object> requestBody = Map.of("request", reqObj);
+        reqObj.put(Constants.FIELDS, List.of("progressdetails"));
+        Map<String, Object> requestBody = Map.of(Constants.REQUEST, reqObj);
         try {
             // progressEndpoint is a FULL absolute URL (unlike the other course paths) — used as-is,
             // NOT prefixed with serviceHost.
@@ -218,14 +219,14 @@ public class CourseClient {
     private HttpHeaders authHeaders(String authUserToken) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("x-authenticated-user-token", authUserToken);
-        headers.set("Authorization", apiKey);
+        headers.set(Constants.X_AUTH_TOKEN, authUserToken);
+        headers.set(Constants.AUTH_TOKEN, apiKey);
         return headers;
     }
 
     private HttpHeaders authHeader(String authUserToken) {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("x-authenticated-user-token", authUserToken);
+        headers.set(Constants.X_AUTH_TOKEN, authUserToken);
         return headers;
     }
 }

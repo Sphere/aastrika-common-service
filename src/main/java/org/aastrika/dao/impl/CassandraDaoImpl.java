@@ -69,6 +69,34 @@ public class CassandraDaoImpl implements CassandraDao {
     }
 
     @Override
+    public void update(String keyspace, String table, Map<String, Object> values,
+                       Map<String, Object> keyConditions) {
+        if (values == null || values.isEmpty()) {
+            throw new IllegalArgumentException("update: values must not be null or empty");
+        }
+        if (keyConditions == null || keyConditions.isEmpty()) {
+            // Guard: an UPDATE with no WHERE is rejected by Cassandra, but fail loudly here rather
+            // than surface a driver error.
+            throw new IllegalArgumentException("update: keyConditions must not be null or empty");
+        }
+        List<String> assignments = new ArrayList<>();
+        List<Object> bound = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : values.entrySet()) {
+            assignments.add(entry.getKey() + " = ?");
+            bound.add(entry.getValue());
+        }
+        List<String> clauses = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : keyConditions.entrySet()) {
+            clauses.add(entry.getKey() + " = ?");
+            bound.add(entry.getValue());
+        }
+        String cql = "UPDATE " + qualified(keyspace, table)
+                + " SET " + String.join(", ", assignments)
+                + " WHERE " + String.join(" AND ", clauses);
+        session.execute(SimpleStatement.newInstance(cql, bound.toArray()));
+    }
+
+    @Override
     public void deleteByKey(String keyspace, String table, Map<String, Object> keyConditions) {
         if (keyConditions == null || keyConditions.isEmpty()) {
             throw new IllegalArgumentException("deleteByKey: keyConditions must not be null or empty");

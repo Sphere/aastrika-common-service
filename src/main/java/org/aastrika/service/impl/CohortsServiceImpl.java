@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.aastrika.client.ContentClient;
 import org.aastrika.client.CourseClient;
 import org.aastrika.client.UserSearchClient;
+import org.aastrika.common.Constants;
 import org.aastrika.dto.response.AppResponse;
 import org.aastrika.dto.response.CohortBatch;
 import org.aastrika.dto.response.CohortUsers;
@@ -189,8 +190,8 @@ public class CohortsServiceImpl implements CohortsService {
         List<CohortBatch> content = new ArrayList<>();
         content.add(selectedBatch);
         Map<String, Object> response = new LinkedHashMap<>();
-        response.put("content", content);
-        response.put("count", 1);
+        response.put(Constants.CONTENT, content);
+        response.put(Constants.COUNT, 1);
         return envelope(ENROLL_API_ID, message, response);
     }
 
@@ -198,7 +199,7 @@ public class CohortsServiceImpl implements CohortsService {
     private AppResponse<Map<String, Object>> envelope(String apiId, String message, Object response) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("message", message);
-        result.put("response", response);
+        result.put(Constants.RESPONSE, response);
         return AppResponse.success(apiId, result, HttpStatus.OK);
     }
 

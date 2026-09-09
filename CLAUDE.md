@@ -26,6 +26,11 @@ Spring Boot common service exposing several cross-cutting capabilities for the A
   external Flink job); plus summary and paginated-review reads.
 - **Cohorts** — active-users and auto-enrollment batches.
 - **Assessment** — assessment submission with external user/content validation.
+- **Public search** — unauthenticated course search over the composite-search Elasticsearch index
+  (`POST /publicSearch/getcourse`), migrated from the course-recommendation service.
+- **User migration** — admin org migration (`PATCH /user/v1/migrate`): learner-service migration,
+  then a `profiledetails` rewrite, PUBLIC role assignment and a data-sync. Not atomic — the
+  learner-service step is irreversible once it succeeds.
 
 Persists to **PostgreSQL** (JPA) and **Cassandra** (Spring Data), and produces/consumes events over
 **Kafka**. Integrates with external content, user, and course services over HTTP.
@@ -81,7 +86,13 @@ org.aastrika
 - Use `jakarta.*` imports — **never** `javax.*` (Spring Boot 3.4.2 / Jakarta EE baseline).
 - Controllers are thin: `@RestController`, **constructor-inject the service interface** (not the impl),
   return `ResponseEntity<AppResponse<T>>`, and contain no business logic.
-- User identity arrives as the `X-Auth-User-Id` request header (`Constants.X_AUTH_USER_ID`).
+  **One documented exception:** `PublicSearchController` (`POST /publicSearch/getcourse`) returns the
+  raw `CourseSearchResponse` — it is a drop-in replacement for the recommendation service's endpoint,
+  so its body must stay byte-compatible for existing callers. Do not add the envelope there; do not
+  copy the exception to new endpoints.
+- User identity arrives as the `x-authenticated-userid` request header (`Constants.X_AUTH_USER_ID`).
+  Admin/token-forwarding endpoints instead use `x-authenticated-user-token` + `Authorization`
+  (`Constants.X_AUTH_TOKEN` / `AUTH_TOKEN`).
   Authentication/authorisation is handled upstream (gateway) — this service trusts the header.
 - Validate request bodies with `jakarta.validation` (`@Valid` on `@RequestBody`).
 - Lombok is used across DTOs/entities. **MapStruct is on the classpath but currently unused**
@@ -89,6 +100,16 @@ org.aastrika
   processor is already configured in `pom.xml`.
 - Persistence: JPA entities in `org.aastrika.entity` → PostgreSQL. Cassandra via Spring Data
   (the `CqlSession` connects at startup — the keyspace must already exist).
+- Search: both search paths point at the same **OpenSearch** cluster — `composite-search.url` for
+  the public course search and `sb.lern.les.host.list` for user autocomplete (they share a default of
+  `localhost:9201`; override both per environment). Autocomplete goes through the OpenSearch
+  `RestHighLevelClient` built in `OpenSearchConfig`. `CompositeSearchClient` instead sends raw JSON
+  over the shared `RestTemplate`, reading only `_source` and a hit count; its `readTotal` accepts both
+  `hits.total` shapes — the bare number of Elasticsearch 6.x and the `{value, relation}` object of
+  Elasticsearch 7+/OpenSearch — so it is version-agnostic. Keep that if you touch it.
+  (An earlier version of this bullet claimed the cluster was Elasticsearch 6.8. That was inherited
+  from the course-recommendation service this endpoint was migrated from and is wrong — do not
+  re-add it.)
 - Messaging: the rating consumer is single-threaded over a single-partition topic by design.
 
 ---

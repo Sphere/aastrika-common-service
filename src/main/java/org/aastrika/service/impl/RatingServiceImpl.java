@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.aastrika.common.Constants;
 import org.aastrika.dto.event.RatingMessage;
 import org.aastrika.dto.request.RatingsLookupRequest;
 import org.aastrika.dto.request.RatingsReadRequest;
@@ -136,8 +137,8 @@ public class RatingServiceImpl implements RatingService {
                 .toList();
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("count", content.size());
-        result.put("content", content);
+        result.put(Constants.COUNT, content.size());
+        result.put(Constants.CONTENT, content);
         return AppResponse.success(READ_API_ID, result, HttpStatus.OK);
     }
 
@@ -149,7 +150,7 @@ public class RatingServiceImpl implements RatingService {
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("message", "Successful");
-        result.put("response", summary == null ? null : toSummaryResponse(summary));
+        result.put(Constants.RESPONSE, summary == null ? null : toSummaryResponse(summary));
         return AppResponse.success(SUMMARY_API_ID, result, HttpStatus.OK);
     }
 
@@ -241,7 +242,7 @@ public class RatingServiceImpl implements RatingService {
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("message", "Successful");
-        result.put("response", content);
+        result.put(Constants.RESPONSE, content);
         return AppResponse.success(LOOKUP_API_ID, result, HttpStatus.OK);
     }
 

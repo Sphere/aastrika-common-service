@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.aastrika.common.Constants;
 import org.aastrika.dto.request.AcquiredDetail;
 import org.aastrika.dto.request.AdminPassbookReadRequest;
 import org.aastrika.dto.request.CompetencyDetail;
@@ -241,8 +242,8 @@ public class PassbookServiceImpl implements PassbookService {
         }
 
         Map<String, Object> content = new LinkedHashMap<>();
-        content.put("count", byUser.size());
-        content.put("content", new ArrayList<>(byUser.values()));
+        content.put(Constants.COUNT, byUser.size());
+        content.put(Constants.CONTENT, new ArrayList<>(byUser.values()));
         return content;
     }
 

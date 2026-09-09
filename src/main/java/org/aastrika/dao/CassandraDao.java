@@ -31,6 +31,16 @@ public interface CassandraDao {
                                                Map<String, Object> conditions, List<String> columns);
 
     /**
+     * Set {@code values} on the row(s) matching all of the given primary-key
+     * {@code column = value} conditions. Both maps are bound as parameters.
+     *
+     * @param values        columns to write; must not be null or empty
+     * @param keyConditions full primary key of the row to update; must not be null or empty
+     */
+    void update(String keyspace, String table, Map<String, Object> values,
+                Map<String, Object> keyConditions);
+
+    /**
      * Delete rows matching all of the given primary-key {@code column = value} conditions.
      *
      * @param keyConditions primary-key column to value conditions; must not be empty

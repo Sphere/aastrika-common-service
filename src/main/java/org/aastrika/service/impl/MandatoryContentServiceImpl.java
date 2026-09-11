@@ -45,12 +45,25 @@ public class MandatoryContentServiceImpl implements MandatoryContentService {
     @Override
     public AppResponse<Map<String, Object>> getMandatoryContentStatusForUser(String authUserToken, String rootOrg,
             String org, String userId) {
+        MandatoryContentResponse response = buildMandatoryContentResponse(authUserToken, rootOrg, org, userId);
+        String message = response.getContentDetails() == null ? MSG_NO_CONTENT : MSG_SUCCESS;
+        return envelope(message, response);
+    }
+
+    @Override
+    public MandatoryContentResponse getMandatoryContentStatus(String authUserToken, String rootOrg, String org,
+            String userId) {
+        return buildMandatoryContentResponse(authUserToken, rootOrg, org, userId);
+    }
+
+    private MandatoryContentResponse buildMandatoryContentResponse(String authUserToken, String rootOrg, String org,
+            String userId) {
         MandatoryContentResponse response = new MandatoryContentResponse();
 
         List<MandatoryUserContent> contentList = repository.findByRootOrgAndOrg(rootOrg, org);
         if (contentList.isEmpty()) {
             log.info("getMandatoryContentStatusForUser: no mandatory content set for rootOrg={}, org={}", rootOrg, org);
-            return envelope(MSG_NO_CONTENT, response);
+            return response;
         }
 
         for (MandatoryUserContent content : contentList) {
@@ -78,7 +91,7 @@ public class MandatoryContentServiceImpl implements MandatoryContentService {
         }
         response.setMandatoryCourseCompleted(completed);
 
-        return envelope(MSG_SUCCESS, response);
+        return response;
     }
 
     /** Fills each course's {@code userProgress} from the course-service progress read (per the source). */

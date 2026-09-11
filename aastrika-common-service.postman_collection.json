@@ -203,7 +203,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{targetUser}}\",\n  \"typeName\": \"competency\",\n  \"competencyDetails\": [\n    {\n      \"competencyId\": \"comp-100\",\n      \"acquiredDetails\": {\n        \"acquiredChannel\": \"self\",\n        \"competencyLevelId\": \"level-2\",\n        \"effectiveDate\": \"2024-01-15T10:00:00Z\",\n        \"additionalParams\": { \"courseId\": \"course-abc\", \"score\": 88 }\n      },\n      \"additionalParams\": { \"source\": \"postman-test\" }\n    }\n  ]\n}",
+              "raw": "{\n  \"request\": {\n    \"userId\": \"{{targetUser}}\",\n    \"typeName\": \"competency\",\n    \"competencyDetails\": [\n      {\n        \"competencyId\": \"comp-100\",\n        \"acquiredDetails\": {\n          \"acquiredChannel\": \"self\",\n          \"competencyLevelId\": \"level-2\",\n          \"effectiveDate\": \"2024-01-15T10:00:00Z\",\n          \"additionalParams\": { \"courseId\": \"course-abc\", \"score\": 88 }\n        },\n        \"additionalParams\": { \"source\": \"postman-test\" }\n      }\n    ]\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -252,7 +252,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"typeName\": \"competency\"\n}",
+              "raw": "{\n  \"request\": {\n    \"typeName\": \"competency\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -297,7 +297,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"typeName\": \"competency\",\n  \"userIds\": [\"{{targetUser}}\", \"mig-test-user-001\"]\n}",
+              "raw": "{\n  \"request\": {\n    \"typeName\": \"competency\",\n    \"userId\": [\"{{targetUser}}\", \"mig-test-user-001\"]\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -353,7 +353,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{targetUser}}\",\n  \"typeName\": \"competency\",\n  \"competencyDetails\": [\n    {\n      \"competencyId\": \"comp-100\",\n      \"acquiredDetails\": {\n        \"acquiredChannel\": \"self\",\n        \"competencyLevelId\": \"level-2\",\n        \"additionalParams\": { \"courseId\": \"course-abc\" }\n      }\n    }\n  ]\n}",
+              "raw": "{\n  \"request\": {\n    \"userId\": \"{{targetUser}}\",\n    \"typeName\": \"competency\",\n    \"competencyDetails\": [\n      {\n        \"competencyId\": \"comp-100\",\n        \"acquiredDetails\": {\n          \"acquiredChannel\": \"self\",\n          \"competencyLevelId\": \"level-2\",\n          \"additionalParams\": { \"courseId\": \"course-abc\" }\n        }\n      }\n    ]\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -402,7 +402,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": \"dup-req-user\",\n  \"typeName\": \"competency\",\n  \"competencyDetails\": [\n    { \"competencyId\": \"c1\", \"acquiredDetails\": { \"acquiredChannel\": \"self\", \"competencyLevelId\": \"l1\" } },\n    { \"competencyId\": \"c1\", \"acquiredDetails\": { \"acquiredChannel\": \"self\", \"competencyLevelId\": \"l2\" } }\n  ]\n}",
+              "raw": "{\n  \"request\": {\n    \"userId\": \"dup-req-user\",\n    \"typeName\": \"competency\",\n    \"competencyDetails\": [\n      { \"competencyId\": \"c1\", \"acquiredDetails\": { \"acquiredChannel\": \"self\", \"competencyLevelId\": \"l1\" } },\n      { \"competencyId\": \"c1\", \"acquiredDetails\": { \"acquiredChannel\": \"self\", \"competencyLevelId\": \"l2\" } }\n    ]\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -451,7 +451,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"typeName\": \"badge\"\n}",
+              "raw": "{\n  \"request\": {\n    \"typeName\": \"badge\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -500,7 +500,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"typeName\": \"\"\n}",
+              "raw": "{\n  \"request\": {\n    \"typeName\": \"\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -545,7 +545,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"typeName\": \"competency\"\n}",
+              "raw": "{\n  \"request\": {\n    \"typeName\": \"competency\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -909,7 +909,7 @@
           }
         },
         {
-          "name": "R3. Batch read (POST /ratings/v2/read)",
+          "name": "R3. Batch read — raw Cassandra shape (POST /ratings/v2/read)",
           "event": [
             {
               "listen": "test",
@@ -917,7 +917,15 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"has count\", () => pm.expect(pm.response.json().result).to.have.property(\"count\"));"
+                  "const b = pm.response.json();",
+                  "pm.test(\"has count\", () => pm.expect(b.result).to.have.property(\"count\"));",
+                  "pm.test(\"lowercase column-name keys\", () => {",
+                  "    if (b.result.content.length > 0) {",
+                  "        pm.expect(b.result.content[0]).to.have.property(\"activityid\");",
+                  "        pm.expect(b.result.content[0]).to.have.property(\"activitytype\");",
+                  "        pm.expect(b.result.content[0]).to.have.property(\"commentby\");",
+                  "    }",
+                  "});"
                 ]
               }
             }
@@ -932,7 +940,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"activityId\": \"{{ratingActivityId}}\",\n  \"activityType\": \"{{ratingActivityType}}\",\n  \"userIds\": [\n    \"{{ratingUserId}}\",\n    \"ghost-user\"\n  ]\n}",
+              "raw": "{\n  \"request\": {\n    \"activityId\": \"{{ratingActivityId}}\",\n    \"activityType\": \"{{ratingActivityType}}\",\n    \"userId\": [\n      \"{{ratingUserId}}\",\n      \"ghost-user\"\n    ]\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -950,11 +958,63 @@
                 "read"
               ]
             },
-            "description": "Ratings for one activity across a list of users."
+            "description": "Ratings for one activity across a list of users. Currently routed to the shape that matches sunbird-cb-ext's raw Cassandra row passthrough: lowercase column-name keys (activityid, activitytype, commentby, ...), userId stays camelCase, and createdon/updatedon/commentupdatedon are the raw timeuuid strings (not resolved timestamps). See R11 for the resolved-timestamp shape."
           }
         },
         {
-          "name": "R4. Rating summary (GET /ratings/v1/summary/...)",
+          "name": "R11. Batch read — resolved-timestamp shape (POST /ratings/v3/read)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"has count\", () => pm.expect(b.result).to.have.property(\"count\"));",
+                  "pm.test(\"camelCase keys with resolved timestamps\", () => {",
+                  "    if (b.result.content.length > 0) {",
+                  "        pm.expect(b.result.content[0]).to.have.property(\"activityId\");",
+                  "        pm.expect(b.result.content[0]).to.have.property(\"createdOn\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"request\": {\n    \"activityId\": \"{{ratingActivityId}}\",\n    \"activityType\": \"{{ratingActivityType}}\",\n    \"userId\": [\n      \"{{ratingUserId}}\",\n      \"ghost-user\"\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ratings/v3/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ratings",
+                "v3",
+                "read"
+              ]
+            },
+            "description": "Same computation as R3. Currently routed to the original shape: camelCase keys (activityId, activityType, commentBy, ...) and createdOn/updatedOn/commentUpdatedOn resolved to ISO-8601 Instants from the underlying timeuuid columns."
+          }
+        },
+        {
+          "name": "R4. Rating summary — source-matching shape (GET /ratings/v1/summary/...)",
           "event": [
             {
               "listen": "test",
@@ -989,11 +1049,50 @@
                 "{{ratingActivityType}}"
               ]
             },
-            "description": "Star counts + latest reviews (enriched with reviewer first name).\n\nReturns 200 with response=null when no ratings_summary row exists. Reviews only appear in latest50reviews when longer than 100 chars (REVIEW_MIN_LENGTH)."
+            "description": "Star counts + latest reviews (enriched with reviewer first name). Currently routed to the shape that matches sunbird-cb-ext's SummaryModel: lowercase/snake_case star-count keys (totalcount1stars.., total_number_of_ratings, sum_of_total_ratings) and latest50Reviews as a double-encoded JSON string (not a real array). See R12 for the camelCase/real-array shape.\n\nReturns 200 with response=null when no ratings_summary row exists. Reviews only appear in latest50reviews when longer than 100 chars (REVIEW_MIN_LENGTH)."
           }
         },
         {
-          "name": "R5. Rating lookup / paginated reviews (POST /ratings/v1/ratingLookUp)",
+          "name": "R12. Rating summary — camelCase shape (GET /ratings/v2/summary/...)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "// A missing summary row still returns 200 with response=null, which is easy to mistake",
+                  "// for success. Assert it is populated so a dropped aggregation event fails loudly.",
+                  "pm.test(\"summary row exists\", () => {",
+                  "    pm.expect(pm.response.json().result.response, ",
+                  "        \"null summary - the aggregation event was probably DLQ'd, check the consumer log\"",
+                  "    ).to.not.be.null;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ratings/v2/summary/{{ratingActivityId}}/{{ratingActivityType}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ratings",
+                "v2",
+                "summary",
+                "{{ratingActivityId}}",
+                "{{ratingActivityType}}"
+              ]
+            },
+            "description": "Same computation as R4. Currently routed to the original shape: camelCase star-count keys (totalCount1Stars.., totalNumberOfRatings, sumOfTotalRatings) and latest50Reviews as a real JSON array (each review enriched with the reviewer's first name), not a double-encoded string.\n\nReturns 200 with response=null when no ratings_summary row exists. Reviews only appear in latest50reviews when longer than 100 chars (REVIEW_MIN_LENGTH)."
+          }
+        },
+        {
+          "name": "R5. Rating lookup — renamed keys (POST /ratings/v1/ratingLookUp)",
           "event": [
             {
               "listen": "test",
@@ -1034,7 +1133,52 @@
                 "ratingLookUp"
               ]
             },
-            "description": "Paginated reviews. Optional 'rating' filters by star; 'updateOn' is the cursor (updatedOnUuid of the last row)."
+            "description": "Paginated reviews. Optional 'rating' filters by star; 'updateOn' is the cursor. Currently routed to the shape with response keys renamed to match the existing UI integration: 'updatedon' (instead of updatedOn) and 'updatedOnUUID' (instead of updatedOnUuid, which is also the cursor value to send back as 'updateOn'). See R13 for the original key names."
+          }
+        },
+        {
+          "name": "R13. Rating lookup — original keys (POST /ratings/v2/ratingLookUp)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "// To paginate: take the last item's updatedOnUuid and send it as 'updateOn' next call."
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": \"{{ratingActivityId}}\",\n  \"activityType\": \"{{ratingActivityType}}\",\n  \"limit\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ratings/v2/ratingLookUp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ratings",
+                "v2",
+                "ratingLookUp"
+              ]
+            },
+            "description": "Same computation as R5. Currently routed to the original key names: 'updatedOn' and 'updatedOnUuid' (the cursor value to send back as 'updateOn')."
           }
         },
         {
@@ -1683,7 +1827,7 @@
       "description": "Mandatory-content status check migrated from sunbird-cb-ext. Requires a live Cassandra (sunbird.mandatory_user_content) and course service; not mock-backed.",
       "item": [
         {
-          "name": "MC1. Mandatory content status (GET /v1/check/mandatoryContentStatus)",
+          "name": "MC1. Mandatory content status — raw shape (GET /v1/check/mandatoryContentStatus)",
           "event": [
             {
               "listen": "test",
@@ -1692,8 +1836,11 @@
                 "exec": [
                   "pm.test('status is 200', () => pm.response.to.have.status(200));",
                   "const b = pm.response.json();",
-                  "pm.test('uniform envelope', () => { pm.expect(b).to.have.property('result'); pm.expect(b.result).to.have.property('message'); pm.expect(b.result).to.have.property('response'); });",
-                  "pm.test('response has completion flag', () => pm.expect(b.result.response).to.have.property('mandatoryCourseCompleted'));"
+                  "pm.test('raw unwrapped shape (no AppResponse envelope)', () => {",
+                  "    pm.expect(b).to.not.have.property('result');",
+                  "    pm.expect(b).to.have.property('mandatoryCourseCompleted');",
+                  "    pm.expect(b).to.have.property('contentDetails');",
+                  "});"
                 ]
               }
             }
@@ -1731,7 +1878,59 @@
                 "mandatoryContentStatus"
               ]
             },
-            "description": "Whether the user has completed every mandatory course for their org. Reads sunbird.mandatory_user_content (needs rows for root_org/org) and calls the course-service progress read per course \u2014 point COURSE_SERVICE_HOST at your real course service. Uniform envelope: result.response = {mandatoryCourseCompleted, contentDetails}. Header 'xAuthUser' token expires \u2014 paste a fresh one."
+            "description": "Whether the user has completed every mandatory course for their org. Reads sunbird.mandatory_user_content (needs rows for root_org/org) and calls the course-service progress read per course \u2014 point COURSE_SERVICE_HOST at your real course service. Currently routed to the RAW response (documented envelope exception in CLAUDE.md \u2014 an existing external caller expects this flat shape and cannot parse the AppResponse envelope): body = {mandatoryCourseCompleted, contentDetails}, no id/ver/ts/result wrapper. See MC2 for the enveloped shape. Header 'xAuthUser' token expires \u2014 paste a fresh one."
+          }
+        },
+        {
+          "name": "MC2. Mandatory content status \u2014 enveloped shape (GET /v2/check/mandatoryContentStatus)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('uniform envelope', () => { pm.expect(b).to.have.property('result'); pm.expect(b.result).to.have.property('message'); pm.expect(b.result).to.have.property('response'); });",
+                  "pm.test('response has completion flag', () => pm.expect(b.result.response).to.have.property('mandatoryCourseCompleted'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "xAuthUser",
+                "value": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJkelFFNjdiRmxRN0V2eUF3Tktndmk1X2ZQR0dsVUVKOGEyMnFlZ1R0TFU0In0.eyJqdGkiOiI5NTU4ODllMC0xNTk5LTQ3NGEtOTYwOC00NmNkZDUxNzJhNTMiLCJleHAiOjE3NTkzMTQ1NDQsIm5iZiI6MCwiaWF0IjoxNzU2NzIyNTQ0LCJpc3MiOiJodHRwczovL2Fhc3RyaWthLXN0YWdlLnRhcmVudG8uY29tL2F1dGgvcmVhbG1zL3N1bmJpcmQiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiZjo5MDdiNWM2NC0xZDc5LTQ0ZGItYjNiNS1lYzEyOWQ1N2Y0MjE6MGViN2UwYWEtNDgxYS00ZjAwLWE4YmUtZjUxNzMyMDI1MDdjIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoicG9ydGFsIiwiYXV0aF90aW1lIjowLCJzZXNzaW9uX3N0YXRlIjoiMzVjZGQyNzctODhlMy00YzA5LWJkMGMtOWRmYmQzOGM4YTNmIiwiYWNyIjoiMSJ9.signature-truncated-replace-with-a-fresh-token",
+                "description": "Course-service token (source header name). Replace with a fresh token when expired."
+              },
+              {
+                "key": "rootOrg",
+                "value": "aastar"
+              },
+              {
+                "key": "org",
+                "value": "aastar"
+              },
+              {
+                "key": "wid",
+                "value": "eaa03519-a19c-4703-bf76-d1dea9be3383",
+                "description": "The user id (source header name)."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v2/check/mandatoryContentStatus",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "check",
+                "mandatoryContentStatus"
+              ]
+            },
+            "description": "Same computation as MC1. Currently routed to the AppResponse-enveloped shape: result.response = {mandatoryCourseCompleted, contentDetails}, result.message = 'Successful'. Header 'xAuthUser' token expires \u2014 paste a fresh one."
           }
         }
       ]

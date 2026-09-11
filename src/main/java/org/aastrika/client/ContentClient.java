@@ -39,7 +39,7 @@ public class ContentClient {
 
     public ContentClient(
             RestTemplate contentRestTemplate,
-            @Value("${content.search-url:http://localhost:8080/v1/search}") String searchUrl,
+            @Value("${content.search-url:http://localhost:8080/v1/content/search}") String searchUrl,
             @Value("${content.hierarchy-url:http://localhost:9000/content/v3/hierarchy}") String hierarchyUrl) {
         this.restTemplate = contentRestTemplate;
         this.searchUrl = searchUrl;

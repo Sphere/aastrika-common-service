@@ -189,10 +189,11 @@ class RatingsControllerTest {
         result.put("content", List.of(Map.of("userId", USER_ID)));
         when(ratingService.readRatings(any())).thenReturn(ok("api.ratings.read", result));
 
-        String body = objectMapper.writeValueAsString(Map.of(
+        // Source contract: payload under "request", and the user list under the singular "userId".
+        String body = objectMapper.writeValueAsString(Map.of("request", Map.of(
                 "activityId", ACTIVITY_ID,
                 "activityType", "Course",
-                "userIds", List.of(USER_ID, "ghost-user")));
+                "userId", List.of(USER_ID, "ghost-user"))));
 
         mockMvc.perform(post("/ratings/v2/read")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -202,15 +203,16 @@ class RatingsControllerTest {
 
         ArgumentCaptor<RatingsReadRequest> captor = ArgumentCaptor.forClass(RatingsReadRequest.class);
         verify(ratingService).readRatings(captor.capture());
-        assertThat(captor.getValue().getUserIds()).containsExactly(USER_ID, "ghost-user");
+        assertThat(captor.getValue().getRequest().getUserIds()).containsExactly(USER_ID, "ghost-user");
     }
 
+    /** Guards the source contract: the payload must sit under a {@code request} key. */
     @Test
-    void read_emptyUserIds_returns400() throws Exception {
+    void read_unwrappedBody_returns400() throws Exception {
         String body = objectMapper.writeValueAsString(Map.of(
                 "activityId", ACTIVITY_ID,
                 "activityType", "Course",
-                "userIds", List.of()));
+                "userId", List.of(USER_ID)));
 
         mockMvc.perform(post("/ratings/v2/read")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -220,13 +222,28 @@ class RatingsControllerTest {
         verify(ratingService, never()).readRatings(any());
     }
 
-    /** Guards the migration rename: the field is userIds (a list), not userId. */
     @Test
-    void read_singularUserIdField_returns400() throws Exception {
-        String body = objectMapper.writeValueAsString(Map.of(
+    void read_emptyUserIds_returns400() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of("request", Map.of(
                 "activityId", ACTIVITY_ID,
                 "activityType", "Course",
-                "userId", USER_ID));
+                "userId", List.of())));
+
+        mockMvc.perform(post("/ratings/v2/read")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+
+        verify(ratingService, never()).readRatings(any());
+    }
+
+    /** Guards the source contract: the wire key is userId (a list), not userIds. */
+    @Test
+    void read_pluralUserIdsKey_returns400() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of("request", Map.of(
+                "activityId", ACTIVITY_ID,
+                "activityType", "Course",
+                "userIds", List.of(USER_ID))));
 
         mockMvc.perform(post("/ratings/v2/read")
                         .contentType(MediaType.APPLICATION_JSON)

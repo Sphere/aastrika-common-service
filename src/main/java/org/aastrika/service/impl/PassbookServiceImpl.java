@@ -64,27 +64,30 @@ public class PassbookServiceImpl implements PassbookService {
 
     @Override
     public AppResponse<Map<String, Object>> getPassbook(String userId, PassbookReadRequest request) {
-        validateTypeName(READ_API_ID, request.getTypeName());
+        PassbookReadRequest.Payload payload = request.getRequest();
+        validateTypeName(READ_API_ID, payload.getTypeName());
         List<UserPassbook> rows =
-                userPassbookRepository.findByKeyUserIdAndKeyTypeName(userId, request.getTypeName());
+                userPassbookRepository.findByKeyUserIdAndKeyTypeName(userId, payload.getTypeName());
         return AppResponse.success(READ_API_ID, buildContent(rows), HttpStatus.OK);
     }
 
     @Override
     public AppResponse<Map<String, Object>> getPassbookByAdmin(AdminPassbookReadRequest request) {
-        validateTypeName(ADMIN_READ_API_ID, request.getTypeName());
+        AdminPassbookReadRequest.Payload payload = request.getRequest();
+        validateTypeName(ADMIN_READ_API_ID, payload.getTypeName());
         List<UserPassbook> rows =
-                userPassbookRepository.findByKeyUserIdInAndKeyTypeName(request.getUserIds(), request.getTypeName());
+                userPassbookRepository.findByKeyUserIdInAndKeyTypeName(payload.getUserIds(), payload.getTypeName());
         return AppResponse.success(ADMIN_READ_API_ID, buildContent(rows), HttpStatus.OK);
     }
 
     @Override
     public AppResponse<Map<String, Object>> updatePassbook(String actingUserId, PassbookUpdateRequest request) {
-        validateTypeName(ADD_API_ID, request.getTypeName());
+        PassbookUpdateRequest.Payload payload = request.getRequest();
+        validateTypeName(ADD_API_ID, payload.getTypeName());
 
         // Reject the same competency listed twice in one request (matches the source behaviour).
         Set<String> seenCompetencyIds = new HashSet<>();
-        for (CompetencyDetail detail : request.getCompetencyDetails()) {
+        for (CompetencyDetail detail : payload.getCompetencyDetails()) {
             if (!seenCompetencyIds.add(detail.getCompetencyId())) {
                 throw new ApiException(ADD_API_ID, HttpStatus.BAD_REQUEST,
                         "Invalid request. Competency " + detail.getCompetencyId() + " is provided twice.");
@@ -93,11 +96,11 @@ public class PassbookServiceImpl implements PassbookService {
 
         String createdDate = OffsetDateTime.now(IST).toString();
         List<UserPassbook> entities = new ArrayList<>();
-        for (CompetencyDetail detail : request.getCompetencyDetails()) {
-            entities.add(toEntity(request.getUserId(), request.getTypeName(), actingUserId, createdDate, detail));
+        for (CompetencyDetail detail : payload.getCompetencyDetails()) {
+            entities.add(toEntity(payload.getUserId(), payload.getTypeName(), actingUserId, createdDate, detail));
         }
 
-        rejectExistingDuplicates(request.getUserId(), request.getTypeName(), entities);
+        rejectExistingDuplicates(payload.getUserId(), payload.getTypeName(), entities);
 
         userPassbookRepository.saveAll(entities);
 

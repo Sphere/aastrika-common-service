@@ -86,10 +86,18 @@ org.aastrika
 - Use `jakarta.*` imports — **never** `javax.*` (Spring Boot 3.4.2 / Jakarta EE baseline).
 - Controllers are thin: `@RestController`, **constructor-inject the service interface** (not the impl),
   return `ResponseEntity<AppResponse<T>>`, and contain no business logic.
-  **One documented exception:** `PublicSearchController` (`POST /publicSearch/getcourse`) returns the
-  raw `CourseSearchResponse` — it is a drop-in replacement for the recommendation service's endpoint,
-  so its body must stay byte-compatible for existing callers. Do not add the envelope there; do not
-  copy the exception to new endpoints.
+  **Two documented exceptions:**
+  - `PublicSearchController` (`POST /publicSearch/getcourse`) returns the raw `CourseSearchResponse` —
+    it is a drop-in replacement for the recommendation service's endpoint, so its body must stay
+    byte-compatible for existing callers.
+  - `MandatoryContentController` v2 (`GET /v2/check/mandatoryContentStatus`) returns the raw
+    `MandatoryContentResponse` — an existing external caller already consumes this flat
+    `{mandatoryCourseCompleted, contentDetails}` shape and cannot be changed to parse the envelope.
+    The v1 endpoint (`GET /v1/check/mandatoryContentStatus`, still `AppResponse`-wrapped) is kept
+    unchanged for callers that use it.
+
+  Do not add the envelope to either of these. Do not add further exceptions without the same kind
+  of justification (an existing caller that cannot be changed).
 - User identity arrives as the `x-authenticated-userid` request header (`Constants.X_AUTH_USER_ID`).
   Admin/token-forwarding endpoints instead use `x-authenticated-user-token` + `Authorization`
   (`Constants.X_AUTH_TOKEN` / `AUTH_TOKEN`).

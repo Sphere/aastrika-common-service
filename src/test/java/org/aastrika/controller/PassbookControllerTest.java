@@ -55,6 +55,12 @@ class PassbookControllerTest {
         return AppResponse.success("api.passbook", Map.of("message", "Successful"), HttpStatus.OK);
     }
 
+    /** Every passbook body sits inside the source repo's {@code request} envelope. */
+    private static Map<String, Object> wrap(Object payload) {
+        return Map.of("request", payload);
+    }
+
+    /** The inner payload only — call sites pass it through {@link #wrap(Object)}. */
     private static Map<String, Object> validUpdateBody() {
         Map<String, Object> acquired = new LinkedHashMap<>();
         acquired.put("acquiredChannel", "self");
@@ -80,20 +86,32 @@ class PassbookControllerTest {
         mockMvc.perform(post("/user/v1/passbook")
                         .header(Constants.X_AUTH_USER_ID, ACTING_USER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("typeName", "competency"))))
+                        .content(objectMapper.writeValueAsString(wrap(Map.of("typeName", "competency")))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.responseCode").value("OK"));
 
         ArgumentCaptor<PassbookReadRequest> captor = ArgumentCaptor.forClass(PassbookReadRequest.class);
         verify(passbookService).getPassbook(eq(ACTING_USER), captor.capture());
-        assertThat(captor.getValue().getTypeName()).isEqualTo("competency");
+        assertThat(captor.getValue().getRequest().getTypeName()).isEqualTo("competency");
+    }
+
+    /** Guards the source contract: the payload must sit under a {@code request} key. */
+    @Test
+    void readOwnPassbook_unwrappedBody_returns400() throws Exception {
+        mockMvc.perform(post("/user/v1/passbook")
+                        .header(Constants.X_AUTH_USER_ID, ACTING_USER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("typeName", "competency"))))
+                .andExpect(status().isBadRequest());
+
+        verify(passbookService, never()).getPassbook(any(), any());
     }
 
     @Test
     void readOwnPassbook_missingIdentityHeader_returns400() throws Exception {
         mockMvc.perform(post("/user/v1/passbook")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("typeName", "competency"))))
+                        .content(objectMapper.writeValueAsString(wrap(Map.of("typeName", "competency")))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.responseCode").value("Bad Request"));
 
@@ -105,7 +123,7 @@ class PassbookControllerTest {
         mockMvc.perform(post("/user/v1/passbook")
                         .header(Constants.X_AUTH_USER_ID, ACTING_USER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("typeName", " "))))
+                        .content(objectMapper.writeValueAsString(wrap(Map.of("typeName", " ")))))
                 .andExpect(status().isBadRequest());
 
         verify(passbookService, never()).getPassbook(any(), any());
@@ -120,14 +138,26 @@ class PassbookControllerTest {
         mockMvc.perform(patch("/user/v1/passbook")
                         .header(Constants.X_AUTH_USER_ID, ACTING_USER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validUpdateBody())))
+                        .content(objectMapper.writeValueAsString(wrap(validUpdateBody()))))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<PassbookUpdateRequest> captor = ArgumentCaptor.forClass(PassbookUpdateRequest.class);
         verify(passbookService).updatePassbook(eq(ACTING_USER), captor.capture());
         // The header user is the actor; the body user is the subject. They are distinct on purpose.
-        assertThat(captor.getValue().getUserId()).isEqualTo(TARGET_USER);
-        assertThat(captor.getValue().getCompetencyDetails()).hasSize(1);
+        assertThat(captor.getValue().getRequest().getUserId()).isEqualTo(TARGET_USER);
+        assertThat(captor.getValue().getRequest().getCompetencyDetails()).hasSize(1);
+    }
+
+    /** Guards the source contract: the payload must sit under a {@code request} key. */
+    @Test
+    void updatePassbook_unwrappedBody_returns400() throws Exception {
+        mockMvc.perform(patch("/user/v1/passbook")
+                        .header(Constants.X_AUTH_USER_ID, ACTING_USER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validUpdateBody())))
+                .andExpect(status().isBadRequest());
+
+        verify(passbookService, never()).updatePassbook(any(), any());
     }
 
     @Test
@@ -138,7 +168,7 @@ class PassbookControllerTest {
         mockMvc.perform(patch("/user/v1/passbook")
                         .header(Constants.X_AUTH_USER_ID, ACTING_USER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(objectMapper.writeValueAsString(wrap(body))))
                 .andExpect(status().isBadRequest());
 
         verify(passbookService, never()).updatePassbook(any(), any());
@@ -157,7 +187,7 @@ class PassbookControllerTest {
         mockMvc.perform(patch("/user/v1/passbook")
                         .header(Constants.X_AUTH_USER_ID, ACTING_USER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(objectMapper.writeValueAsString(wrap(body))))
                 .andExpect(status().isBadRequest());
 
         verify(passbookService, never()).updatePassbook(any(), any());
@@ -179,7 +209,7 @@ class PassbookControllerTest {
         mockMvc.perform(patch("/user/v1/passbook")
                         .header(Constants.X_AUTH_USER_ID, ACTING_USER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content(objectMapper.writeValueAsString(wrap(body))))
                 .andExpect(status().isBadRequest());
 
         verify(passbookService, never()).updatePassbook(any(), any());
@@ -191,9 +221,10 @@ class PassbookControllerTest {
     void adminRead_returns200AndNeedsNoIdentityHeader() throws Exception {
         when(passbookService.getPassbookByAdmin(any())).thenReturn(ok());
 
-        String body = objectMapper.writeValueAsString(Map.of(
+        // Source contract: the list of users travels under the singular key "userId".
+        String body = objectMapper.writeValueAsString(wrap(Map.of(
                 "typeName", "competency",
-                "userIds", List.of(TARGET_USER, "demo-user-02")));
+                "userId", List.of(TARGET_USER, "demo-user-02"))));
 
         mockMvc.perform(post("/admin/user/v1/passbook")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -203,11 +234,26 @@ class PassbookControllerTest {
         verify(passbookService).getPassbookByAdmin(any());
     }
 
+    /** Guards the source contract: the wire key is userId (a list), not userIds. */
+    @Test
+    void adminRead_pluralUserIdsKey_returns400() throws Exception {
+        String body = objectMapper.writeValueAsString(wrap(Map.of(
+                "typeName", "competency",
+                "userIds", List.of(TARGET_USER))));
+
+        mockMvc.perform(post("/admin/user/v1/passbook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+
+        verify(passbookService, never()).getPassbookByAdmin(any());
+    }
+
     @Test
     void adminRead_emptyUserIds_returns400() throws Exception {
-        String body = objectMapper.writeValueAsString(Map.of(
+        String body = objectMapper.writeValueAsString(wrap(Map.of(
                 "typeName", "competency",
-                "userIds", List.of()));
+                "userId", List.of())));
 
         mockMvc.perform(post("/admin/user/v1/passbook")
                         .contentType(MediaType.APPLICATION_JSON)

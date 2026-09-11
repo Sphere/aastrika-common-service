@@ -9,7 +9,7 @@ No dependencies (Python 3 stdlib only). Listens on :8080 and returns Sunbird-sty
 
 Content / search / user:
   PATCH /system/v3/content/update/{id}   -> {"responseCode":"OK", ...}         (ratings #6 write-back)
-  POST  /v1/search                       -> additional-tag search (empty) OR, when the request filters
+  POST  /v1/content/search                -> additional-tag search (empty) OR, when the request filters
                                             by "identifier", a live course with a "batches" array
                                             (cohort active-users / auto-enroll batch lookup)
   POST  /private/user/v1/search          -> user validation (string userId) OR full user records
@@ -23,7 +23,7 @@ Course / LMS (cohorts):
   POST  /v1/course/enroll                -> OK
 
 Point the app at it via application.properties (already the defaults):
-  content.search-url            = http://localhost:8080/v1/search
+  content.search-url            = http://localhost:8080/v1/content/search
   content.update-url            = http://localhost:8080/system/v3/content/update/
   user.search-url               = http://localhost:8080/private/user/v1/search
   cohorts.course.service-host   = http://localhost:8080/
@@ -121,7 +121,7 @@ class Handler(BaseHTTPRequestHandler):
         print(f"[MOCK] POST {self.path}  body={json.dumps(body)[:300]}", flush=True)
         req = (body or {}).get("request") or {}
 
-        if self.path.startswith("/v1/search"):
+        if self.path.startswith("/v1/content/search"):
             filters = req.get("filters") or {}
             identifier = filters.get("identifier")
             if identifier:  # cohort batch lookup (searchLiveContent by identifier)

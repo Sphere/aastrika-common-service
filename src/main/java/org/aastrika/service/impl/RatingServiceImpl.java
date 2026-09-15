@@ -12,10 +12,12 @@ import java.util.stream.Collectors;
 
 import org.aastrika.common.Constants;
 import org.aastrika.dto.event.RatingMessage;
+import org.aastrika.dto.request.BulkRatingLookupRequest;
 import org.aastrika.dto.request.RatingsLookupRequest;
 import org.aastrika.dto.request.RatingsReadRequest;
 import org.aastrika.dto.request.RequestRating;
 import org.aastrika.dto.response.AppResponse;
+import org.aastrika.dto.response.BulkRatingSummaryResponse;
 import org.aastrika.dto.response.RatingInfo;
 import org.aastrika.dto.response.RatingInfoV3;
 import org.aastrika.dto.response.RatingLookupResponse;
@@ -354,6 +356,27 @@ public class RatingServiceImpl implements RatingService {
         result.put("message", "Successful");
         result.put(Constants.RESPONSE, contentV2);
         return AppResponse.success(LOOKUP_API_ID, result, HttpStatus.OK);
+    }
+
+    @Override
+    public List<BulkRatingSummaryResponse> bulkRatingLookup(BulkRatingLookupRequest request) {
+        List<RatingSummary> summaries = ratingSummaryRepository
+                .findByKeyActivityIdInAndKeyActivityType(request.getActivityIds(), request.getActivityType());
+
+        List<BulkRatingSummaryResponse> content = new ArrayList<>();
+        for (RatingSummary summary : summaries) {
+            int total = summary.getTotalNumberOfRatings() == null ? 0 : summary.getTotalNumberOfRatings().intValue();
+            int sum = summary.getSumOfTotalRatings() == null ? 0 : summary.getSumOfTotalRatings().intValue();
+            double average = total > 0 ? Math.round((double) sum / total * 100.0) / 100.0 : 0.0;
+            content.add(BulkRatingSummaryResponse.builder()
+                    .activityId(summary.getKey().getActivityId())
+                    .activityType(summary.getKey().getActivityType())
+                    .sumOfTotalRatings(sum)
+                    .totalNumberOfRatings(total)
+                    .averageRating(average)
+                    .build());
+        }
+        return content;
     }
 
     private static Instant reviewDate(String dateTimeUuid) {

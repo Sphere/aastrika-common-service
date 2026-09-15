@@ -1,11 +1,14 @@
 package org.aastrika.service;
 
+import java.util.List;
 import java.util.Map;
 
+import org.aastrika.dto.request.BulkRatingLookupRequest;
 import org.aastrika.dto.request.RatingsLookupRequest;
 import org.aastrika.dto.request.RatingsReadRequest;
 import org.aastrika.dto.request.RequestRating;
 import org.aastrika.dto.response.AppResponse;
+import org.aastrika.dto.response.BulkRatingSummaryResponse;
 
 public interface RatingService {
 
@@ -47,4 +50,11 @@ public interface RatingService {
      * match the existing UI integration's expected shape.
      */
     AppResponse<Map<String, Object>> ratingLookUpV2(RatingsLookupRequest request);
+
+    /**
+     * Bulk rating-summary lookup, migrated from the recommendation service's
+     * {@code Controller.getRatings}. Returns the raw (unwrapped) list — see the exception noted for
+     * {@code RatingsController.bulkRatingLookup} in {@code CLAUDE.md}.
+     */
+    List<BulkRatingSummaryResponse> bulkRatingLookup(BulkRatingLookupRequest request);
 }

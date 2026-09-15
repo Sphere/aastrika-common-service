@@ -1,12 +1,15 @@
 package org.aastrika.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.validation.Valid;
+import org.aastrika.dto.request.BulkRatingLookupRequest;
 import org.aastrika.dto.request.RatingsLookupRequest;
 import org.aastrika.dto.request.RatingsReadRequest;
 import org.aastrika.dto.request.RequestRating;
 import org.aastrika.dto.response.AppResponse;
+import org.aastrika.dto.response.BulkRatingSummaryResponse;
 import org.aastrika.service.RatingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -84,6 +87,18 @@ public class RatingsController {
     public ResponseEntity<AppResponse<Map<String, Object>>> ratingLookUpV2(
             @Valid @RequestBody RatingsLookupRequest request) {
         return ResponseEntity.ok(ratingService.ratingLookUpV2(request));
+    }
+
+    /**
+     * Bulk rating-summary lookup, migrated from the recommendation service's
+     * {@code Controller.getRatings}. The path and the raw (unwrapped) array response match the
+     * source verbatim — an existing external caller depends on this exact shape, so this is the one
+     * {@code RatingsController} endpoint that does not return the {@code AppResponse} envelope.
+     */
+    @PostMapping("/bulkRatingLookup")
+    public ResponseEntity<List<BulkRatingSummaryResponse>> bulkRatingLookup(
+            @Valid @RequestBody BulkRatingLookupRequest request) {
+        return ResponseEntity.ok(ratingService.bulkRatingLookup(request));
     }
 
 }

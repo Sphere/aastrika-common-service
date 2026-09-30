@@ -23,5 +23,8 @@ public class Constants {
     public static final String IS_TENANT = "isTenant";
     public static final String REQUEST = "request";
     public static final String IS_CBP = "isCbp";
+    public static final String CONTENT = "content";
+    public static final String COUNT = "count";
+    public static final String RESPONSE = "response";
 
 }

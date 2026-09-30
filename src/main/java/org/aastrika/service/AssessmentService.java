@@ -1,42 +1,20 @@
 package org.aastrika.service;
 
-
 import java.util.Map;
 
-import jakarta.validation.Valid;
-import org.aastrika.dto.AssessmentSubmissionDTO;
+import org.aastrika.dto.request.AssessmentSubmitRequest;
 
 public interface AssessmentService {
-    /**
-     * submits an assessment
-     *
-     * @param data
-     * @return
-     * @throws Exception
-     */
-    public Map<String, Object> submitAssessment(String rootOrg, @Valid AssessmentSubmissionDTO data, String userEmail)
-            throws Exception;
-
-
-    Map<String, Object> getAssessmentByContentUser(String rootOrg, String courseId, String userId) throws Exception;
 
     /**
-     * submits assessments coming from iframe
+     * Validates the user (external user-search), scores the submitted questions in-memory, resolves
+     * the parent content, and persists the attempt (assessment or quiz path).
      *
-     * @param request
-     * @return
-     * @throws Exception
-     */
-    Map<String, Object> submitAssessmentByIframe(String rootOrg, Map<String, Object> request) throws Exception;
-
-    /**
-     * Get assement question set
+     * <p>Returns the raw score summary ({@code result, correct, inCorrect, blank, total, passPercent})
+     * exactly as the source does — this is a live client contract, so it is <b>not</b> wrapped in the
+     * AppResponse envelope.
      *
-     * @param courseId
-     * @param assessmentContentId
-     * @return
+     * @throws org.aastrika.exception.ApiException 400 if the user is invalid
      */
-    public Map<String, Object> getAssessmentContent(String courseId, String assessmentContentId);
-
+    Map<String, Object> submitAssessment(String rootOrg, String userId, AssessmentSubmitRequest request);
 }
-

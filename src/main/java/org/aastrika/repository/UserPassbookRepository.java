@@ -1,9 +1,11 @@
 package org.aastrika.repository;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.aastrika.entity.UserPassbook;
 import org.aastrika.entity.UserPassbookKey;
+import org.springframework.data.cassandra.repository.AllowFiltering;
 import org.springframework.data.cassandra.repository.CassandraRepository;
 import org.springframework.stereotype.Repository;
 
@@ -23,6 +25,15 @@ public interface UserPassbookRepository extends CassandraRepository<UserPassbook
      * clustering column ({@code typename}), so no ALLOW FILTERING is needed.
      */
     List<UserPassbook> findByKeyUserIdAndKeyTypeName(String userId, String typeName);
+
+    /**
+     * A user's entries of one type, limited to the given competencies ({@code typeid}). Stays within
+     * one partition; ALLOW FILTERING is required because {@code typeid} follows {@code acquiredchannel}
+     * in the clustering order.
+     */
+    @AllowFiltering
+    List<UserPassbook> findByKeyUserIdAndKeyTypeNameAndKeyTypeIdIn(String userId, String typeName,
+                                                                   Collection<String> typeIds);
 
     /**
      * Entries of one type for several users (admin read). {@code userid IN (...)} on the partition

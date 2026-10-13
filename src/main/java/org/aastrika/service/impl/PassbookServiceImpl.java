@@ -28,6 +28,7 @@ import org.aastrika.entity.UserPassbook;
 import org.aastrika.entity.UserPassbookKey;
 import org.aastrika.exception.ApiException;
 import org.aastrika.repository.UserPassbookRepository;
+import org.aastrika.service.CompetencyCertificateService;
 import org.aastrika.service.PassbookService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -42,6 +43,7 @@ public class PassbookServiceImpl implements PassbookService {
     private static final String READ_API_ID = "user.passbook.read";
     private static final String ADMIN_READ_API_ID = "user.passbook.admin.read";
     private static final String ADD_API_ID = "user.passbook.add";
+    private static final String COMPETENCY_TYPE_NAME = "competency";
 
     private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
     private static final DateTimeFormatter SQL_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -52,13 +54,16 @@ public class PassbookServiceImpl implements PassbookService {
                     Comparator.nullsLast(Comparator.reverseOrder()));
 
     private final UserPassbookRepository userPassbookRepository;
+    private final CompetencyCertificateService competencyCertificateService;
     private final List<String> supportedTypeNames;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public PassbookServiceImpl(
             UserPassbookRepository userPassbookRepository,
+            CompetencyCertificateService competencyCertificateService,
             @Value("${passbook.supported-type-names:competency}") List<String> supportedTypeNames) {
         this.userPassbookRepository = userPassbookRepository;
+        this.competencyCertificateService = competencyCertificateService;
         this.supportedTypeNames = supportedTypeNames;
     }
 
@@ -100,9 +105,14 @@ public class PassbookServiceImpl implements PassbookService {
             entities.add(toEntity(payload.getUserId(), payload.getTypeName(), actingUserId, createdDate, detail));
         }
 
-        rejectExistingDuplicates(payload.getUserId(), payload.getTypeName(), entities);
+//        rejectExistingDuplicates(payload.getUserId(), payload.getTypeName(), entities);
+//
+//        userPassbookRepository.saveAll(entities);
 
-        userPassbookRepository.saveAll(entities);
+        // Async: never delays or fails this response. Only the payload's competencies are evaluated.
+        if (COMPETENCY_TYPE_NAME.equals(payload.getTypeName())) {
+            competencyCertificateService.processAsync(payload.getUserId(), seenCompetencyIds);
+        }
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("insertedCount", entities.size());

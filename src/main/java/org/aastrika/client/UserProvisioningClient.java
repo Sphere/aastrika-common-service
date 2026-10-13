@@ -55,7 +55,7 @@ public class UserProvisioningClient {
             RestTemplate contentRestTemplate,
             @Value("${learn-service.url:http://localhost:9000}") String serviceUrl,
             @Value("${learn-service.user.create-path:/v3/user/create}") String createPath,
-            @Value("${learn-service.user.read-path:/private/user/v1/read/}") String readPath,
+            @Value("${learn-service.user.read-path:/private/user/v1/search/}") String readPath,
             @Value("${learn-service.user.update-path:/private/user/v1/update}") String updatePath,
             @Value("${learn-service.user.assign-role-path:/private/user/v1/assign/role}") String assignRolePath,
             @Value("${learn-service.user.search-path:/private/user/v1/search}") String searchPath,
@@ -157,8 +157,12 @@ public class UserProvisioningClient {
         return null;
     }
 
+    /**
+     * Reads a user from the learner service ({@code result.response}); {@code null} if the call
+     * fails or the response cannot be interpreted. Also used by the competency-certificate task.
+     */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> readUser(String userId) {
+    public Map<String, Object> readUser(String userId) {
         try {
             Map<String, Object> response = restTemplate.exchange(join(readPath) + userId, HttpMethod.GET,
                     new HttpEntity<>(jsonHeaders()), Map.class).getBody();

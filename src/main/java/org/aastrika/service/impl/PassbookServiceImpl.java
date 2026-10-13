@@ -105,9 +105,9 @@ public class PassbookServiceImpl implements PassbookService {
             entities.add(toEntity(payload.getUserId(), payload.getTypeName(), actingUserId, createdDate, detail));
         }
 
-//        rejectExistingDuplicates(payload.getUserId(), payload.getTypeName(), entities);
-//
-//        userPassbookRepository.saveAll(entities);
+        rejectExistingDuplicates(payload.getUserId(), payload.getTypeName(), entities);
+
+        userPassbookRepository.saveAll(entities);
 
         // Async: never delays or fails this response. Only the payload's competencies are evaluated.
         if (COMPETENCY_TYPE_NAME.equals(payload.getTypeName())) {

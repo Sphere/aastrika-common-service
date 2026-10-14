@@ -171,7 +171,8 @@ public class UserProvisioningClient {
             }
             Object inner = ((Map<String, Object>) result).get(Constants.RESPONSE);
             return inner instanceof Map<?, ?> map ? (Map<String, Object>) map : null;
-        } catch (RestClientException e) {
+        } catch (RestClientException | IllegalArgumentException e) {
+            // IllegalArgumentException (e.g. InvalidUrlException "Bad authority") = misconfigured learn-service.url.
             log.error("User read-back failed: {}", e.getMessage());
             return null;
         }

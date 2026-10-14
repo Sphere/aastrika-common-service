@@ -3,6 +3,7 @@
 CREATE TABLE IF NOT EXISTS user_competency_certificate (
     user_id         varchar(64)  NOT NULL,
     competency_id   varchar(64)  NOT NULL,
+    competency_name varchar(256),
     root_org_id     varchar(64)  NOT NULL,
     template_id     varchar(128),
     event_id        uuid         NOT NULL,

@@ -114,9 +114,11 @@ public class CompetencyCertificateServiceImpl implements CompetencyCertificateSe
 
         for (String competencyId : candidates) {
             if (levelsByCompetency.getOrDefault(competencyId, Set.of()).containsAll(requiredLevels)) {
+                String competencyName = nameByCompetency.get(competencyId);
+                // The certificate falls back to the id when the passbook has no name; the table keeps null.
                 CertificateSubject subject = new CertificateSubject(userName,
-                        nameByCompetency.getOrDefault(competencyId, competencyId));
-                issue(userId, competencyId, rootOrgId, config.get().templateId(), subject);
+                        competencyName != null ? competencyName : competencyId);
+                issue(userId, competencyId, competencyName, rootOrgId, config.get().templateId(), subject);
 //                issue(userId, competencyId, rootOrgId, "WaterBirth", subject);
             }
         }
@@ -129,8 +131,8 @@ public class CompetencyCertificateServiceImpl implements CompetencyCertificateSe
     }
 
     /** Generates the certificate unless already generated; a failure is recorded and retried on the next update. */
-    private void issue(String userId, String competencyId, String rootOrgId, String templateId,
-                       CertificateSubject subject) {
+    private void issue(String userId, String competencyId, String competencyName, String rootOrgId,
+                       String templateId, CertificateSubject subject) {
         try {
             UserCompetencyCertificate record = certificateRepository
                     .findById(new UserCompetencyCertificateId(userId, competencyId))
@@ -138,6 +140,7 @@ public class CompetencyCertificateServiceImpl implements CompetencyCertificateSe
             if (UserCompetencyCertificate.GENERATED.equals(record.getStatus())) {
                 return;
             }
+            record.setCompetencyName(competencyName);
             record.setRootOrgId(rootOrgId);
             record.setTemplateId(templateId);
             try {

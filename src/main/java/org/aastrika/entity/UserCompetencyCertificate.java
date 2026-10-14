@@ -36,6 +36,10 @@ public class UserCompetencyCertificate {
     @Column(name = "competency_id")
     private String competencyId;
 
+    /** From the passbook's {@code additionalParams.competencyName}; null when the passbook has none. */
+    @Column(name = "competency_name")
+    private String competencyName;
+
     @Column(name = "root_org_id")
     private String rootOrgId;
 

@@ -39,7 +39,6 @@ public class CompetencyCertificateQueryServiceImpl implements CompetencyCertific
             Map<String, Object> item = baseResult(row);
             item.put("status", row.getStatus());
             item.put("isCertificateGenerated", UserCompetencyCertificate.GENERATED.equals(row.getStatus()));
-            item.put("certificateUrl", row.getCertificateUrl());
             item.put("message", row.getMessage());
             item.put("completedAt", row.getCompletedAt());
             item.put("updatedAt", row.getUpdatedAt());
@@ -83,6 +82,7 @@ public class CompetencyCertificateQueryServiceImpl implements CompetencyCertific
         item.put("rootOrgId", row.getRootOrgId());
         item.put("userId", row.getUserId());
         item.put("competencyId", row.getCompetencyId());
+        item.put("competencyName", row.getCompetencyName());
         return item;
     }
 

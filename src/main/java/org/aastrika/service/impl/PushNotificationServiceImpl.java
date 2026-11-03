@@ -31,15 +31,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class PushNotificationServiceImpl implements PushNotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(PushNotificationServiceImpl.class);
-
-    private static final String UNKNOWN_ERROR_MSG = "Unknown error";
-    private static final int FCM_BATCH_SIZE = 500;
-    private static final int QUERY_IN_CHUNK = 1000;
 
     private static final Set<MessagingErrorCode> DEAD_TOKEN_ERRORS = Set.of(
             MessagingErrorCode.UNREGISTERED,        // messaging/registration-token-not-registered
@@ -47,11 +44,20 @@ public class PushNotificationServiceImpl implements PushNotificationService {
 
     private final UserFcmTokenRepository tokenRepository;
     private final ObjectProvider<FirebaseMessaging> firebaseMessaging;
+    private final String unknownErrorMsg;
+    private final int fcmBatchSize;
+    private final int queryInChunk;
 
     public PushNotificationServiceImpl(UserFcmTokenRepository tokenRepository,
-                                       ObjectProvider<FirebaseMessaging> firebaseMessaging) {
+                                       ObjectProvider<FirebaseMessaging> firebaseMessaging,
+                                       @Value("${notification.unknown-error-msg:Unknown error}") String unknownErrorMsg,
+                                       @Value("${notification.fcm-batch-size:500}") int fcmBatchSize,
+                                       @Value("${notification.query-in-chunk:1000}") int queryInChunk) {
         this.tokenRepository = tokenRepository;
         this.firebaseMessaging = firebaseMessaging;
+        this.unknownErrorMsg = unknownErrorMsg;
+        this.fcmBatchSize = fcmBatchSize;
+        this.queryInChunk = queryInChunk;
     }
 
     @Override
@@ -123,7 +129,7 @@ public class PushNotificationServiceImpl implements PushNotificationService {
 
         try {
             List<UserFcmToken> devices = new ArrayList<>();
-            for (List<String> chunk : partition(ids, QUERY_IN_CHUNK)) {
+            for (List<String> chunk : partition(ids, queryInChunk)) {
                 devices.addAll(tokenRepository.findByUserIdIn(chunk));
             }
             List<String> tokens = devices.stream().map(UserFcmToken::getFcmToken).toList();
@@ -145,7 +151,7 @@ public class PushNotificationServiceImpl implements PushNotificationService {
             int failureCount = 0;
             List<String> deadTokens = new ArrayList<>();
 
-            for (List<String> batch : partition(tokens, FCM_BATCH_SIZE)) {
+            for (List<String> batch : partition(tokens, fcmBatchSize)) {
                 MulticastMessage message = MulticastMessage.builder()
                         .addAllTokens(batch)
                         .setNotification(Notification.builder()
@@ -178,7 +184,7 @@ public class PushNotificationServiceImpl implements PushNotificationService {
             }
 
             if (!deadTokens.isEmpty()) {
-                for (List<String> chunk : partition(deadTokens, QUERY_IN_CHUNK)) {
+                for (List<String> chunk : partition(deadTokens, queryInChunk)) {
                     tokenRepository.deleteByFcmTokenIn(chunk);
                 }
             }
@@ -221,7 +227,7 @@ public class PushNotificationServiceImpl implements PushNotificationService {
         return parts;
     }
 
-    private static String messageOf(Throwable e) {
-        return e.getMessage() != null ? e.getMessage() : UNKNOWN_ERROR_MSG;
+    private String messageOf(Throwable e) {
+        return e.getMessage() != null ? e.getMessage() : unknownErrorMsg;
     }
 }

@@ -9,13 +9,8 @@ import com.google.firebase.messaging.MulticastMessage;
 import com.google.firebase.messaging.Notification;
 import com.google.firebase.messaging.SendResponse;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
 import org.aastrika.dto.request.RegisterTokenRequest;
 import org.aastrika.dto.request.RemoveTokenRequest;
 import org.aastrika.dto.request.SendByTokenRequest;
@@ -32,6 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class PushNotificationServiceImpl implements PushNotificationService {
@@ -47,6 +44,7 @@ public class PushNotificationServiceImpl implements PushNotificationService {
     private final String unknownErrorMsg;
     private final int fcmBatchSize;
     private final int queryInChunk;
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     public PushNotificationServiceImpl(UserFcmTokenRepository tokenRepository,
                                        ObjectProvider<FirebaseMessaging> firebaseMessaging,
@@ -209,13 +207,27 @@ public class PushNotificationServiceImpl implements PushNotificationService {
 
     // ---------------------------------------------------------------- helpers
 
-    /** FCM data payloads are string-only, so every value is converted with String.valueOf. */
-    private static Map<String, String> stringifyData(Map<String, Object> data) {
+    /**
+     * FCM data payloads are string-only. Strings pass through as-is; objects/arrays (e.g. actionData)
+     * are serialised to a JSON string; other scalars use String.valueOf.
+     */    private static Map<String, String> stringifyData(Map<String, Object> data) {
         if (data == null || data.isEmpty()) {
             return Collections.emptyMap();
         }
         Map<String, String> out = new LinkedHashMap<>();
-        data.forEach((k, v) -> out.put(k, String.valueOf(v)));
+        for (Map.Entry<String, Object> e : data.entrySet()) {
+            Object v = e.getValue();
+            if (v instanceof Map || v instanceof Collection) {
+                try {
+                    out.put(e.getKey(), JSON.writeValueAsString(v));
+                } catch (JsonProcessingException ex) {
+                    throw new ApiException(SEND_API_ID, HttpStatus.BAD_REQUEST,
+                            "Invalid JSON in data field: " + e.getKey());
+                }
+            } else {
+                out.put(e.getKey(), String.valueOf(v));
+            }
+        }
         return out;
     }
 

@@ -1,13 +1,7 @@
 package org.aastrika.service.impl;
 
-import com.google.firebase.messaging.AndroidConfig;
-import com.google.firebase.messaging.AndroidNotification;
-import com.google.firebase.messaging.BatchResponse;
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.MessagingErrorCode;
-import com.google.firebase.messaging.MulticastMessage;
-import com.google.firebase.messaging.Notification;
-import com.google.firebase.messaging.SendResponse;
+import com.google.firebase.messaging.*;
+
 import java.time.OffsetDateTime;
 import java.util.*;
 
@@ -112,25 +106,22 @@ public class PushNotificationServiceImpl implements PushNotificationService {
     public AppResponse<Map<String, Object>> sendByToken(SendByTokenRequest body) {
         SendByTokenRequest.Payload request = body.getRequest();
 
-        // Accept either one user ("userId") or many ("userIds"), de-duplicated, order preserved.
-        Set<String> idSet = new LinkedHashSet<>();
-        if (request.getUserIds() != null) {
-            request.getUserIds().stream().filter(StringUtils::hasText).forEach(idSet::add);
-        }
-        if (StringUtils.hasText(request.getUserId())) {
-            idSet.add(request.getUserId());
-        }
-        if (idSet.isEmpty()) {
+        List<String> ids = collectUserIds(request);
+        if (ids.isEmpty()) {
             throw new ApiException(SEND_API_ID, HttpStatus.BAD_REQUEST, "userId or userIds is required");
         }
-        List<String> ids = new ArrayList<>(idSet);
+        FirebaseMessaging messaging = firebaseMessaging.getIfAvailable();
+        if (messaging == null) {
+            throw new ApiException(SEND_API_ID, HttpStatus.SERVICE_UNAVAILABLE, "Firebase is not configured");
+        }
 
         try {
-            List<UserFcmToken> devices = new ArrayList<>();
-            for (List<String> chunk : partition(ids, queryInChunk)) {
-                devices.addAll(tokenRepository.findByUserIdIn(chunk));
-            }
-            List<String> tokens = devices.stream().map(UserFcmToken::getFcmToken).toList();
+            List<UserFcmToken> devices = findDevices(ids);
+            List<String> tokens = devices.stream()
+                    .map(UserFcmToken::getFcmToken)
+                    .filter(StringUtils::hasText)
+                    .distinct()
+                    .toList();
             Set<String> usersWithDevices = new LinkedHashSet<>();
             devices.forEach(device -> usersWithDevices.add(device.getUserId()));
             List<String> usersWithoutDevices = ids.stream()
@@ -142,49 +133,26 @@ public class PushNotificationServiceImpl implements PushNotificationService {
                         "No registered devices found for the given user(s): " + usersWithoutDevices);
             }
 
-            FirebaseMessaging messaging = firebaseMessaging.getObject();
             Map<String, String> data = stringifyData(request.getData());
-
             int successCount = 0;
             int failureCount = 0;
             List<String> deadTokens = new ArrayList<>();
 
             for (List<String> batch : partition(tokens, fcmBatchSize)) {
-                MulticastMessage message = MulticastMessage.builder()
-                        .addAllTokens(batch)
-                        .setNotification(Notification.builder()
-                                .setTitle(request.getTitle())
-                                .setBody(request.getBody())
-                                .build())
-                        .putAllData(data)
-                        .setAndroidConfig(AndroidConfig.builder()
-                                .setPriority(AndroidConfig.Priority.HIGH)
-                                .setNotification(AndroidNotification.builder()
-                                        .setChannelId("default")
-                                        .build())
-                                .build())
-                        .build();
-
-                BatchResponse response = messaging.sendEachForMulticast(message);
-                successCount += response.getSuccessCount();
-                failureCount += response.getFailureCount();
-
-                // Collect tokens of devices that uninstalled the app or whose token expired.
-                List<SendResponse> responses = response.getResponses();
-                for (int j = 0; j < responses.size(); j++) {
-                    SendResponse r = responses.get(j);
-                    if (!r.isSuccessful()
-                            && r.getException() != null
-                            && DEAD_TOKEN_ERRORS.contains(r.getException().getMessagingErrorCode())) {
-                        deadTokens.add(batch.get(j));
-                    }
+                try {
+                    BatchResponse response = messaging.sendEachForMulticast(buildMessage(request, data, batch));
+                    successCount += response.getSuccessCount();
+                    failureCount += response.getFailureCount();
+                    collectDeadTokens(batch, response.getResponses(), deadTokens);
+                } catch (Exception e) {
+                    // One failed batch must not abort the batches already sent or still to send.
+                    failureCount += batch.size();
+                    log.error("FCM send failed for a batch of {} token(s)", batch.size(), e);
                 }
             }
 
-            if (!deadTokens.isEmpty()) {
-                for (List<String> chunk : partition(deadTokens, queryInChunk)) {
-                    tokenRepository.deleteByFcmTokenIn(chunk);
-                }
+            for (List<String> chunk : partition(deadTokens, queryInChunk)) {
+                tokenRepository.deleteByFcmTokenIn(chunk);
             }
 
             Map<String, Object> result = new LinkedHashMap<>();
@@ -197,11 +165,66 @@ public class PushNotificationServiceImpl implements PushNotificationService {
             result.put("usersWithoutDevices", usersWithoutDevices);
             return AppResponse.success(SEND_API_ID, result, HttpStatus.OK);
         } catch (ApiException e) {
-            throw e;   // the 404 above must not be turned into a 500 by the catch below
+            throw e;
         } catch (Exception e) {
             log.error("Send Notification Error", e);
             throw new ApiException(SEND_API_ID, HttpStatus.INTERNAL_SERVER_ERROR,
                     "Failed to send notification: " + messageOf(e));
+        }
+    }
+
+    /** One user ("userId") or many ("userIds"), blanks dropped, de-duplicated, order preserved. */
+    private static List<String> collectUserIds(SendByTokenRequest.Payload request) {
+        Set<String> ids = new LinkedHashSet<>();
+        if (request.getUserIds() != null) {
+            request.getUserIds().stream().filter(StringUtils::hasText).forEach(ids::add);
+        }
+        if (StringUtils.hasText(request.getUserId())) {
+            ids.add(request.getUserId());
+        }
+        return new ArrayList<>(ids);
+    }
+
+    private List<UserFcmToken> findDevices(List<String> ids) {
+        List<UserFcmToken> devices = new ArrayList<>();
+        for (List<String> chunk : partition(ids, queryInChunk)) {
+            devices.addAll(tokenRepository.findByUserIdIn(chunk));
+        }
+        return devices;
+    }
+
+    private static MulticastMessage buildMessage(SendByTokenRequest.Payload request,
+                                                 Map<String, String> data, List<String> tokens) {
+        return MulticastMessage.builder()
+                .addAllTokens(tokens)
+                .setNotification(Notification.builder()
+                        .setTitle(request.getTitle())
+                        .setBody(request.getBody())
+                        .build())
+                .putAllData(data)
+                .setAndroidConfig(AndroidConfig.builder()
+                        .setPriority(AndroidConfig.Priority.HIGH)
+                        .setNotification(AndroidNotification.builder().setChannelId("default").build())
+                        .build())
+                .build();
+    }
+
+    /** Collects tokens FCM reports as unregistered/invalid; null-safe on the error code. */
+    private static void collectDeadTokens(List<String> batch, List<SendResponse> responses,
+                                          List<String> deadTokens) {
+        for (int i = 0; i < responses.size(); i++) {
+            SendResponse r = responses.get(i);
+            if (r.isSuccessful()) {
+                continue;
+            }
+            FirebaseMessagingException ex = r.getException();
+            MessagingErrorCode code = ex != null ? ex.getMessagingErrorCode() : null;
+            if (code != null && DEAD_TOKEN_ERRORS.contains(code)) {
+                deadTokens.add(batch.get(i));
+            } else {
+                log.warn("FCM send failed for one token: code={}, error={}", code,
+                        ex != null ? ex.getMessage() : "unknown");
+            }
         }
     }
 

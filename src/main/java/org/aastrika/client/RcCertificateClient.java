@@ -47,7 +47,8 @@ public class RcCertificateClient {
     }
 
     /**
-     * @param title printed on the certificate (sent as both {@code courseName} and {@code workshop-name})
+     * @param title printed on the certificate (sent as {@code courseName}, {@code workshop-name} and
+     *              {@code certificateName})
      * @return the certificate URL, or empty if RC answered without one
      */
     @SuppressWarnings("unchecked")
@@ -63,6 +64,9 @@ public class RcCertificateClient {
         body.put("templateId", templateId);
         body.put("userId", userId);
         body.put("userName", userName);
+        // Top level is what the mapper stores on its record (returned by its GET); the copy in
+        // rcCertificateGenerationBody is only used to render the template.
+        body.put("certificateName", title);
         body.put("eventId", eventId.toString());
         body.put("rcCertificateGenerationBody", certBody);
 

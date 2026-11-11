@@ -1,7 +1,7 @@
 # Triage Report — Aastrika Common Service
 **Branch:** filtered-api-mig
 **Stack:** Java 21 · Spring Boot 3.4.2 · Maven · PostgreSQL / Cassandra · Kafka
-**Last reviewed:** 2026-08-04
+**Last reviewed:** 2026-11-11
 
 ---
 
@@ -11,7 +11,7 @@
 |---|---|---|
 | Critical | 0 | 1 |
 | High | 1 | 1 |
-| Medium | 1 | 0 |
+| Medium | 2 | 0 |
 | Low | 1 | 1 |
 
 Items tagged `[security]` are security-relevant and referenced from `SECURITY.md`.
@@ -77,6 +77,32 @@ unless the cluster enforces auth. Silent misconfiguration.
 **File:** `src/main/resources/application.properties:100-101`
 **Fix:** enforce non-empty Cassandra credentials in staging/production via deployment config.
 
+### T-007 — 15 controller tests fail; out of date with current controllers
+**Severity:** Medium
+**Area:** Tests / CI
+
+Found 2026-11-11 while running the full suite (`mvn test`: 80 run, 7 failures, 8 errors) for the
+passbook date fix. The failures are **test-code drift**, not production bugs. The tests weren't
+updated when the controllers changed. While they stay red, a real regression in these areas would go
+unnoticed.
+
+**Files and causes:**
+- `src/test/java/org/aastrika/controller/CertificateControllerTest.java` (8 errors): the
+  `@WebMvcTest` context fails to start with `NoSuchBeanDefinitionException:
+  CompetencyCertificateQueryService`. Fix: add a `@MockitoBean` for it. This came with the
+  competency-certificate endpoints.
+- `src/test/java/org/aastrika/controller/MandatoryContentControllerTest.java` (3 failures): the tests
+  expect the `AppResponse` envelope (`$.responseCode`) and a 502 on upstream failure. The v2 endpoint
+  now returns the raw `MandatoryContentResponse` (documented exception in `CLAUDE.md`). Fix: point the
+  envelope tests at v1, or assert the raw v2 shape.
+- `src/test/java/org/aastrika/controller/RatingsControllerTest.java` (4 failures): the tests verify the
+  v1 service methods (`ratingLookUp`, `$.result.count`, `$.result.response.totalNumberOfRatings`), but
+  the controller now calls the v2 methods (e.g. `ratingLookUpV2`). Fix: align the tests with the
+  current v1/v2 routing and response shapes.
+
+**Fix:** update the three test classes. No production code change is expected. Re-run `mvn test`;
+all 80 should pass.
+
 ---
 
 ## Low
@@ -119,3 +145,4 @@ overridden everywhere else.
 | T-004 | Remove weak `sb.api-key` default | Backend / Infra | This sprint | Open |
 | T-005 | Enforce Cassandra credentials in prod | Backend / Infra | Backlog | Open |
 | T-006 | Ensure prod overrides DB credentials | Backend / Infra | Backlog | Open |
+| T-007 | Fix 15 out-of-date controller tests (Certificate, MandatoryContent, Ratings) | Backend | This sprint | Open |

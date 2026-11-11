@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
  * How/when a competency was acquired. {@code acquiredChannel} and {@code competencyLevelId} map to
  * clustering-key columns, so they are mandatory. {@code effectiveDate} is optional (defaults to
  * "now"); accepts ISO-8601 (e.g. {@code 2024-01-01T12:00:00Z}) or {@code yyyy-MM-dd HH:mm:ss}.
+ * Values without a zone are read as UTC, matching sb-cb-ext.
  * Entries in {@code additionalParams} are persisted into the {@code acquireddetails} column
  * (non-string values are JSON-serialized), alongside a server-set {@code createdBy}/{@code createdDate}.
  */

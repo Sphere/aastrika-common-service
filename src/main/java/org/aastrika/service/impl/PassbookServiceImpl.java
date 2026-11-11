@@ -2,8 +2,7 @@ package org.aastrika.service.impl;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -45,8 +44,11 @@ public class PassbookServiceImpl implements PassbookService {
     private static final String ADD_API_ID = "user.passbook.add";
     private static final String COMPETENCY_TYPE_NAME = "competency";
 
-    private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
+    // Zone-less inputs are read as UTC and createdDate is written as UTC with milliseconds, matching
+    // sb-cb-ext (its JVM runs in UTC). Existing user_passbook_v2 rows were written that way.
     private static final DateTimeFormatter SQL_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter CREATED_DATE =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
 
     // Sorts a competency's acquired entries newest-first by effectiveDate; nulls sort last.
     private static final Comparator<Map<String, Object>> BY_EFFECTIVE_DATE_DESC =
@@ -99,7 +101,7 @@ public class PassbookServiceImpl implements PassbookService {
             }
         }
 
-        String createdDate = OffsetDateTime.now(IST).toString();
+        String createdDate = CREATED_DATE.format(Instant.now());
         List<UserPassbook> entities = new ArrayList<>();
         for (CompetencyDetail detail : payload.getCompetencyDetails()) {
             entities.add(toEntity(payload.getUserId(), payload.getTypeName(), actingUserId, createdDate, detail));
@@ -190,6 +192,7 @@ public class PassbookServiceImpl implements PassbookService {
         }
     }
 
+    /** Missing → now; ISO-8601 with a zone/offset → as given; zone-less → UTC (as sb-cb-ext did). */
     private Instant parseEffectiveDate(String value) {
         if (value == null || value.isBlank()) {
             return Instant.now();
@@ -201,7 +204,7 @@ public class PassbookServiceImpl implements PassbookService {
         }
         for (DateTimeFormatter formatter : List.of(DateTimeFormatter.ISO_LOCAL_DATE_TIME, SQL_TIMESTAMP)) {
             try {
-                return LocalDateTime.parse(value, formatter).atZone(IST).toInstant();
+                return LocalDateTime.parse(value, formatter).atZone(ZoneOffset.UTC).toInstant();
             } catch (DateTimeParseException ignored) {
                 // try the next format
             }

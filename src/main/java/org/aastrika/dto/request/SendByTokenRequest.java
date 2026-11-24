@@ -38,5 +38,8 @@ public class SendByTokenRequest {
 
         @JsonProperty("data")
         private Map<String, Object> data;
+        private String imageUrl;
+
     }
+
 }

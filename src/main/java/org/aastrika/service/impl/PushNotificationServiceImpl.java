@@ -1,5 +1,6 @@
 package org.aastrika.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.firebase.messaging.*;
 
 import java.time.OffsetDateTime;
@@ -195,18 +196,53 @@ public class PushNotificationServiceImpl implements PushNotificationService {
 
     private static MulticastMessage buildMessage(SendByTokenRequest.Payload request,
                                                  Map<String, String> data, List<String> tokens) {
+        String image = resolveImageUrl(request.getImageUrl(), data);
+        AndroidNotification.Builder androidNotification = AndroidNotification.builder()
+                .setChannelId("default")
+                .setSound("default");
+        if (image != null) {
+            androidNotification.setImage(image);
+        }
+
+        Aps.Builder aps = Aps.builder()
+                .setSound("default")
+                .setMutableContent(image != null);   // lets the iOS Notification Service Extension attach the image
+
+        ApnsConfig.Builder apns = ApnsConfig.builder().setAps(aps.build());
+        if (image != null) {
+            apns.setFcmOptions(ApnsFcmOptions.builder().setImage(image).build());
+        }
+
         return MulticastMessage.builder()
                 .addAllTokens(tokens)
                 .setNotification(Notification.builder()
-                        .setTitle(request.getTitle())
-                        .setBody(request.getBody())
+                        .setTitle(StringUtils.hasText(request.getTitle()) ? request.getTitle() : "Notification")
+                        .setBody(request.getBody() != null ? request.getBody() : "")
+                        .setImage(image)             // null is fine when there is no image
                         .build())
                 .putAllData(data)
                 .setAndroidConfig(AndroidConfig.builder()
                         .setPriority(AndroidConfig.Priority.HIGH)
-                        .setNotification(AndroidNotification.builder().setChannelId("default").build())
+                        .setNotification(androidNotification.build())
                         .build())
+                .setApnsConfig(apns.build())
                 .build();
+    }
+
+    private static String resolveImageUrl(String imageUrl, Map<String, String> data) {
+        if (StringUtils.hasText(imageUrl)) {
+            return imageUrl;
+        }
+        try {
+            String actionData = data != null ? data.get("actionData") : null;
+            if (!StringUtils.hasText(actionData)) {
+                return null;
+            }
+            JsonNode logo = JSON.readTree(actionData).path("logo");
+            return logo.isTextual() && logo.asText().startsWith("https://") ? logo.asText() : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /** Collects tokens FCM reports as unregistered/invalid; null-safe on the error code. */

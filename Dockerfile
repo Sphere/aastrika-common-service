@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21
+FROM eclipse-temurin:21.0.13.1_2-jdk
 
 RUN apt-get update \
     && apt-get install -y \
